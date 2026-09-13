@@ -275,8 +275,9 @@ private fun SettingsDialog(audio: FlipFixAudioController, onDismiss: () -> Unit)
         title = { Text("Settings", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                SettingRow(title = "BGM", checked = audio.bgmEnabled, onCheckedChange = audio::setBgmEnabled)
-                SettingRow(title = "SFX", checked = audio.sfxEnabled, onCheckedChange = audio::setSfxEnabled)
+                // Gunakan fungsi update yang baru
+                SettingRow(title = "BGM", checked = audio.bgmEnabled, onCheckedChange = audio::updateBgm)
+                SettingRow(title = "SFX", checked = audio.sfxEnabled, onCheckedChange = audio::updateSfx)
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }

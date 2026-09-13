@@ -20,12 +20,13 @@ class FlipFixAudioController {
     var bgmEnabled by mutableStateOf(true)
     var sfxEnabled by mutableStateOf(true)
 
-    fun setBgmEnabled(enabled: Boolean) {
+    // Ubah nama agar tidak bentrok dengan setter otomatis Kotlin
+    fun updateBgm(enabled: Boolean) {
         bgmEnabled = enabled
         if (!enabled) stopBgm()
     }
 
-    fun setSfxEnabled(enabled: Boolean) {
+    fun updateSfx(enabled: Boolean) {
         sfxEnabled = enabled
     }
 
