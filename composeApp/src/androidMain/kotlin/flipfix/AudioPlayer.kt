@@ -18,17 +18,14 @@ class FlipFixAudioController {
     private val sfxPlayer = AudioPlayer()
 
     var bgmEnabled by mutableStateOf(true)
-        private set
-
     var sfxEnabled by mutableStateOf(true)
-        private set
 
-    fun setBgmEnabled(enabled: Boolean) {
+    fun toggleBgm(enabled: Boolean) {
         bgmEnabled = enabled
         if (!enabled) musicPlayer.stop()
     }
 
-    fun setSfxEnabled(enabled: Boolean) {
+    fun toggleSfx(enabled: Boolean) {
         sfxEnabled = enabled
     }
 
