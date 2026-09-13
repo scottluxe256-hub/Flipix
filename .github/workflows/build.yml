@@ -1,0 +1,117 @@
+name: FlipFix Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+  pull_request:
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Build debug APK
+        run: |
+          gradle :composeApp:assembleDebug --no-daemon
+
+      - name: Rename APK
+        shell: bash
+        run: |
+          mkdir -p release
+          cp composeApp/build/outputs/apk/debug/composeApp-debug.apk \
+             release/FlipFix.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlipFix-Android
+          path: release/FlipFix.apk
+          if-no-files-found: error
+
+
+  windows:
+    name: Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Build Windows EXE
+        shell: pwsh
+        run: |
+          gradle :composeApp:packageReleaseExe --no-daemon
+
+      - name: Locate EXE
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem `
+            -Path "composeApp/build/compose/binaries" `
+            -Filter "*.exe" `
+            -Recurse `
+            | Select-Object -First 1
+
+          if (-not $exe) {
+            Write-Error "Windows EXE was not produced."
+            exit 1
+          }
+
+          New-Item -ItemType Directory -Force -Path "release" | Out-Null
+
+          Copy-Item `
+            $exe.FullName `
+            "release/FlipFix.exe" `
+            -Force
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlipFix-Windows
+          path: release/FlipFix.exe
+          if-no-files-found: error
