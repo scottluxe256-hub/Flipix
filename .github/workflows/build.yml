@@ -39,6 +39,7 @@ jobs:
 
       - name: Build APK via cargo-apk
         env:
+          ANDROID_HOME: ${{ runner.workspace }}/../android-sdk
           ANDROID_NDK_HOME: ${{ runner.workspace }}/../android-sdk/ndk/25.2.9519653
         run: cargo apk build --release
 
@@ -46,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FlipFix-Release-APK
-          path: target/debug/apk/flipfix.apk
+          path: target/release/apk/flipfix.apk

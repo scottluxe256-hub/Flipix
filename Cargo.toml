@@ -28,7 +28,6 @@ package = "com.flipfix.game"
 label = "FlipFix"
 icon = "assets/logo.png"
 version_code = 1
-version_name = "1.0"
 assets = "assets"
 build_targets = ["aarch64-linux-android"]
 
