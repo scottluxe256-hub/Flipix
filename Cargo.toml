@@ -17,12 +17,12 @@ macroquad = "0.4"
 # Image Processing (WebP & PNG)
 image = "0.24"
 
-# Audio Decoder & Stream Engine (Symphonia v0.5 features)
+# Audio Decoder & Stream Engine
 symphonia = { version = "0.5", features = ["aac", "isomp4", "ogg"] }
 rodio = { version = "0.17", default-features = false }
 
-# Video AV1 Decoder
-dav1d = "0.9"
+# Video AV1 Decoder (Force build dari source C internal)
+dav1d = { version = "0.9", features = ["cargo-build"] }
 
 # Target spesifik untuk kompilasi Android NDK / Cargo-APK
 [package.metadata.android]
