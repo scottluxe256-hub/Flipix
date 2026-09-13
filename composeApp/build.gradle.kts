@@ -28,8 +28,9 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
 
-            implementation("io.github.kdroidfilter:composemediaplayer:0.11.4")
-            implementation("io.github.kdroidfilter:composemediaplayer-audio:0.11.4")
+            // Downgrade ke 0.10.0 agar cocok dengan Kotlin 2.1.0 proyekmu
+            implementation("io.github.kdroidfilter:composemediaplayer:0.10.0")
+            implementation("io.github.kdroidfilter:composemediaplayer-audio:0.10.0")
         }
 
         androidMain.dependencies {
@@ -44,7 +45,7 @@ kotlin {
 
 android {
     namespace = "com.flipfix"
-    compileSdk = 36 // <-- Diubah dari 35 ke 36
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.flipfix"
@@ -58,6 +59,8 @@ android {
     sourceSets {
         getByName("main") {
             assets.srcDirs("src/androidMain/assets")
+            // Menentukan lokasi res yang benar agar logo.png terdeteksi
+            res.srcDirs("src/androidMain/res")
         }
     }
 
