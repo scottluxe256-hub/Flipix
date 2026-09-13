@@ -2,6 +2,7 @@ package flipfix
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,10 +94,11 @@ fun MusicEffect(
     enabled: Boolean
 ) {
     LaunchedEffect(uri, enabled) {
+        val scope = this
         if (uri == null || !enabled) {
             controller.stopBgm()
             return@LaunchedEffect
         }
-        controller.loopBgm(this, uri)
+        controller.loopBgm(scope, uri)
     }
 }
