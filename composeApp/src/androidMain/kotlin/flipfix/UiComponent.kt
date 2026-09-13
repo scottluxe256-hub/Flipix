@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -99,12 +98,6 @@ fun FlipFixApp() {
                             audio.playSfx(resourceUri("click.opus"))
                         }
                     )
-
-                    MusicEffect(
-                        controller = audio,
-                        uri = resourceUri("output.m4a"),
-                        enabled = audio.bgmEnabled
-                    )
                 }
 
                 AppScreen.Levels -> {
@@ -142,12 +135,6 @@ fun FlipFixApp() {
                             }
                         }
                     )
-
-                    MusicEffect(
-                        controller = audio,
-                        uri = resourceUri("ingame.m4a"),
-                        enabled = audio.bgmEnabled
-                    )
                 }
             }
 
@@ -168,37 +155,31 @@ private fun SplashScreen(
     onFinished: () -> Unit
 ) {
     val videoState = rememberVideoPlayerState()
-    val videoUri = resourceUri(if (portrait) "aarch64.mp4" else "x64.mp4")
-    var finished by remember { mutableStateOf(false) }
+    val videoFileName = if (portrait) "aarch64.mp4" else "x64.mp4"
+    val videoUri = "file:///android_asset/$videoFileName"
+    var isError by remember { mutableStateOf(false) }
 
     LaunchedEffect(videoUri) {
         try {
-            videoState.onPlaybackEnded = {
-                if (!finished) {
-                    finished = true
-                    onFinished()
-                }
-            }
+            videoState.onPlaybackEnded = { onFinished() }
             videoState.openUri(videoUri)
-            delay(8_500)
-            if (!finished) {
-                finished = true
-                onFinished()
-            }
-        } catch (_: Throwable) {
-            if (!finished) {
-                finished = true
-                onFinished()
-            }
+        } catch (e: Exception) {
+            isError = true
+            delay(2000)
+            onFinished()
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        VideoPlayerSurface(
-            playerState = videoState,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+        if (!isError) {
+            VideoPlayerSurface(
+                playerState = videoState,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(text = "AV1 Playback Not Supported / File Missing", color = Color.Red, fontSize = 16.sp)
+        }
     }
 }
 
@@ -326,8 +307,6 @@ private fun RulesDialog(onDismiss: () -> Unit) {
     )
 }
 
-// BACA ASET DI WINDOWS (Desktop)
 fun resourceUri(path: String): String {
-    val url = Thread.currentThread().contextClassLoader.getResource(path)
-    return url?.toURI()?.toString() ?: ""
+    return "file:///android_asset/$path"
 }
