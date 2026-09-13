@@ -36,7 +36,7 @@ jobs:
 
       - name: Build debug APK
         run: |
-          ./gradlew :composeApp:assembleDebug --no-daemon
+          gradle :composeApp:assembleDebug --no-daemonp       
 
       - name: Prepare APK
         shell: bash
@@ -84,7 +84,7 @@ jobs:
       - name: Build Windows EXE
         shell: pwsh
         run: |
-          .\gradlew :composeApp:packageReleaseExe --no-daemon
+          gradle :composeApp:packageReleaseExe --no-daemon
 
       - name: Locate EXE
         shell: pwsh
