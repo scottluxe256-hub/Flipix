@@ -27,7 +27,6 @@ dav1d = "0.9"
 package = "com.flipfix.game"
 label = "FlipFix"
 icon = "assets/logo.png"
-version_code = 1
 assets = "assets"
 build_targets = ["aarch64-linux-android"]
 
