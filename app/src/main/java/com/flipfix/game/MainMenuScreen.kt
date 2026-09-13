@@ -2,7 +2,6 @@ package com.flipfix.game
 
 import android.app.Activity
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -18,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun MainMenuScreen(gameState: GameState, audioPlayer: AudioPlayer) {
@@ -26,18 +24,22 @@ fun MainMenuScreen(gameState: GameState, audioPlayer: AudioPlayer) {
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showRulesDialog by remember { mutableStateOf(false) }
 
+    val bgBitmap = rememberAssetBitmap("bg_android.webp")
+
     LaunchedEffect(Unit) {
         audioPlayer.playBgm("output.m4a", gameState.isBgmEnabled.value)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background WebP
-        Image(
-            painter = rememberAsyncImagePainter("file:///android_asset/bg_android.webp"),
-            contentDescription = "Main Menu Background",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        // Render Background WebP bawaan
+        bgBitmap?.let { bitmap ->
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Main Menu Background",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Tombol Navigasi Atas
         Row(

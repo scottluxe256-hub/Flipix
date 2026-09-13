@@ -66,9 +66,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
-    // Coil untuk memuat gambar WebP dari Assets
-    implementation("io.coil-kt:coil-compose:2.6.0")
-
     // AndroidX Media3 ExoPlayer & Decoder AV1
     val media3Version = "1.2.1"
     implementation("androidx.media3:media3-exoplayer:$media3Version")

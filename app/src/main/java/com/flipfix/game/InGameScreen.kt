@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 
 @Composable
@@ -119,11 +118,13 @@ fun InGameScreen(gameState: GameState, audioPlayer: AudioPlayer) {
                 modifier = Modifier.weight(1f)
             ) {
                 itemsIndexed(gameState.cards) { index, card ->
-                    val imagePath = if (card.isFlipped || card.isMatched) {
-                        "file:///android_asset/${card.imageAsset}"
+                    val assetName = if (card.isFlipped || card.isMatched) {
+                        card.imageAsset
                     } else {
-                        "file:///android_asset/card_back.webp"
+                        "card_back.webp"
                     }
+
+                    val cardBitmap = rememberAssetBitmap(assetName)
 
                     Card(
                         modifier = Modifier
@@ -143,12 +144,14 @@ fun InGameScreen(gameState: GameState, audioPlayer: AudioPlayer) {
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(imagePath),
-                            contentDescription = "Card",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        cardBitmap?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = "Card Image",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
