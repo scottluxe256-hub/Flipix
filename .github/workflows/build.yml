@@ -12,9 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  # ==========================================
-  # ANDROID APK
-  # ==========================================
   android:
     name: Android APK
     runs-on: ubuntu-latest
@@ -36,7 +33,7 @@ jobs:
 
       - name: Build debug APK
         run: |
-          gradle :composeApp:assembleDebug --no-daemonp       
+          gradle :composeApp:assembleDebug --no-daemon
 
       - name: Prepare APK
         shell: bash
@@ -59,9 +56,6 @@ jobs:
           path: release/FlipFix.apk
           if-no-files-found: error
 
-  # ==========================================
-  # WINDOWS EXE
-  # ==========================================
   windows:
     name: Windows EXE
     runs-on: windows-latest
