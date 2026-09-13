@@ -19,7 +19,7 @@ pub fn draw_shadow_button(
     let clicked = is_hovered && is_mouse_button_pressed(MouseButton::Left);
 
     // Box Shadow
-    draw_rectangle_rounded(
+    draw_rectangle(
         Rect::new(x, y + 6.0, w, h),
         0.4,
         10,
@@ -28,13 +28,13 @@ pub fn draw_shadow_button(
 
     // Main Button Body
     let draw_y = if clicked { y + 3.0 } else { y };
-    draw_rectangle_rounded(
+    draw_rectangle(
         Rect::new(x, draw_y, w, h),
         0.4,
         10,
         if is_hovered { bg_color } else { bg_color },
     );
-    draw_rectangle_rounded_lines(
+    draw_rectangle_lines(
         Rect::new(x, draw_y, w, h),
         0.4,
         10,
@@ -83,13 +83,13 @@ pub fn draw_glass_header(game_data: &GameData, on_exit_click: impl FnOnce()) -> 
     let badge_w = 140.0;
     let badge_h = 40.0;
     let badge_x = (screen_width() - badge_w) * 0.5;
-    draw_rectangle_rounded(
+    draw_rectangle(
         Rect::new(badge_x, 15.0, badge_w, badge_h),
         0.5,
         8,
         WHITE,
     );
-    draw_rectangle_rounded_lines(
+    draw_rectangle_lines(
         Rect::new(badge_x, 15.0, badge_w, badge_h),
         0.5,
         8,
@@ -106,13 +106,13 @@ pub fn draw_glass_header(game_data: &GameData, on_exit_click: impl FnOnce()) -> 
     );
 
     // Translucent Glassmorphism Panel Body
-    draw_rectangle_rounded(
+    draw_rectangle(
         Rect::new(margin, card_y, card_w, card_h),
         0.25,
         10,
         Color::new(1.0, 1.0, 1.0, 0.65),
     );
-    draw_rectangle_rounded_lines(
+    draw_rectangle_lines(
         Rect::new(margin, card_y, card_w, card_h),
         0.25,
         10,
@@ -150,13 +150,13 @@ pub fn draw_popups(game_data: &mut GameData, audio: &mut AudioManager) {
     let dialog_x = (screen_width() - dialog_w) * 0.5;
     let dialog_y = (screen_height() - dialog_h) * 0.5;
 
-    draw_rectangle_rounded(
+    draw_rectangle(
         Rect::new(dialog_x, dialog_y, dialog_w, dialog_h),
         0.15,
         10,
         WHITE,
     );
-    draw_rectangle_rounded_lines(
+    draw_rectangle_lines(
         Rect::new(dialog_x, dialog_y, dialog_w, dialog_h),
         0.15,
         10,

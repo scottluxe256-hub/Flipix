@@ -2,7 +2,7 @@
 name = "flipfix"
 version = "0.1.0"
 edition = "2021"
-autobins = false # FIX: Mencegah Cargo mendeteksi main.rs sebagai bin otomatis
+autobins = false
 
 [lib]
 name = "flipfix"
@@ -10,17 +10,11 @@ path = "src/main.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-# Game Engine 2D
 macroquad = "0.4"
-
-# Image Processing (WebP & PNG)
 image = "0.24"
-
-# Audio Decoder & Stream Engine
 symphonia = { version = "0.5", features = ["aac", "isomp4", "ogg"] }
 rodio = { version = "0.17", default-features = false }
 
-# Target spesifik untuk kompilasi Android NDK / Cargo-APK
 [package.metadata.android]
 package = "com.flipfix.game"
 label = "FlipFix"
