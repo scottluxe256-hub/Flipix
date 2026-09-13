@@ -6,6 +6,8 @@ authors = ["Your Name"]
 description = "FlipFix - Pure Rust Memory Match Game for Android"
 
 [lib]
+name = "flipfix"
+path = "src/main.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
