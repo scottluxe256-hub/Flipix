@@ -20,7 +20,15 @@ kotlin {
         }
     }
 
-    jvm("desktop")
+    jvm("desktop") {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(JvmTarget.JVM_21)
+                }
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -29,23 +37,13 @@ kotlin {
             implementation("org.jetbrains.compose.material3:material3")
             implementation("org.jetbrains.compose.components:components-resources")
 
-            /*
-             * Kamel:
-             * Tidak diperlukan untuk WebP lokal karena Compose Resources
-             * sudah menangani WebP.
-             *
-             * Tetap disediakan kalau nanti FlipFix membutuhkan image
-             * loading dari URL/network.
-             */
-            implementation("media.kamel:kamel-image-default:1.0.9")
+            // WebP lokal tidak membutuhkan Kamel.
+            // Hapus ini kalau tidak ada image loading dari network.
+            // implementation("media.kamel:kamel-image-default:1.0.9")
 
-            /*
-             * Audio + video player untuk Android/JVM Desktop.
-             */
             implementation(
                 "io.github.kdroidfilter:composemediaplayer:0.10.1"
             )
-
             implementation(
                 "io.github.kdroidfilter:composemediaplayer-audio:0.10.1"
             )
@@ -55,7 +53,7 @@ kotlin {
             implementation("androidx.activity:activity-compose:1.12.0")
         }
 
-        desktopMain.dependencies {
+        getByName("desktopMain").dependencies {
             implementation(compose.desktop.currentOs)
         }
     }
