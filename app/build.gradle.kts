@@ -49,7 +49,7 @@ android {
 
     packaging {
         resources {
-            excludes += "/META-DIR/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 }
@@ -66,9 +66,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
-    // AndroidX Media3 ExoPlayer & Decoder AV1
+    // AndroidX Media3 ExoPlayer (Cukup 2 ini untuk Splash Screen Video)
     val media3Version = "1.2.1"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-ui:$media3Version")
-    implementation("androidx.media3:media3-decoder-av1:$media3Version")
 }
