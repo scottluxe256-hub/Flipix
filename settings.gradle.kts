@@ -5,11 +5,8 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
 dependencyResolutionManagement {
-    // Diubah dari FAIL_ON_PROJECT_REPOS ke PREFER_SETTINGS
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
@@ -17,5 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "FlipFix"
-
-include(":composeApp")
+include(":app")
