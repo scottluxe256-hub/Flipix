@@ -1,7 +1,5 @@
 package flipfix
 
-import android.net.Uri
-import android.widget.VideoView
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -30,6 +28,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,11 +42,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.delay
 
 private enum class AppScreen {
     Splash, Menu, Levels, Game
@@ -153,28 +151,29 @@ private fun SplashScreen(
     portrait: Boolean,
     onFinished: () -> Unit
 ) {
-    val context = LocalContext.current
-    val videoFileName = if (portrait) "aarch64.mp4" else "x64.mp4"
+    LaunchedEffect(Unit) {
+        delay(1500)
+        onFinished()
+    }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
+        modifier = Modifier.fillMaxSize().background(Color(0xFF1E1E2C)),
         contentAlignment = Alignment.Center
     ) {
-        AndroidView(
-            factory = { ctx ->
-                VideoView(ctx).apply {
-                    val uri = Uri.parse("android.resource://${ctx.packageName}/raw/${videoFileName.substringBefore(".")}")
-                    setVideoURI(uri)
-                    setOnCompletionListener { onFinished() }
-                    setOnErrorListener { _, _, _ ->
-                        onFinished()
-                        true
-                    }
-                    start()
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "FlipFix",
+                color = Color.White,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Loading Game...",
+                color = Color.Gray,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 }
 
