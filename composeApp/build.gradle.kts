@@ -13,7 +13,11 @@ version = "1.0.0"
 kotlin {
     jvmToolchain(21)
 
-    // Hanya menyalakan target Android (Desktop JVM dihapus)
+    // Bypass pengecekan metadata Kotlin untuk seluruh compiler
+    compilerOptions {
+        freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
@@ -60,6 +64,9 @@ android {
     buildTypes {
         debug {
             isDebuggable = true
+            // Matikan optimasi D8 yang merusak Kotlin Metadata pada mode debug
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
 
         release {
@@ -80,6 +87,7 @@ android {
             excludes += "/META-INF/io.netty.versions.properties"
             excludes += "/META-INF/LICENSE*"
             excludes += "/META-INF/NOTICE*"
+            excludes += "/META-INF/*.kotlin_module"
         }
     }
 }
