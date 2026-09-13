@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import io.github.kdroidfilter.composemediaplayer.audio.AudioPlayer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -51,11 +52,11 @@ class FlipFixAudioController {
         sfxPlayer.stop()
     }
 
-    suspend fun loopBgm(uri: String) {
+    suspend fun loopBgm(scope: CoroutineScope, uri: String) {
         if (!bgmEnabled) return
         musicPlayer.play(uri)
 
-        while (isActive && bgmEnabled) {
+        while (scope.isActive && bgmEnabled) {
             delay(250)
             val duration = musicPlayer.currentDuration() ?: 0L
             val position = musicPlayer.currentPosition() ?: 0L
@@ -87,6 +88,6 @@ fun MusicEffect(
             controller.stopBgm()
             return@LaunchedEffect
         }
-        controller.loopBgm(uri)
+        controller.loopBgm(this, uri)
     }
 }
