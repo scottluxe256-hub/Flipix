@@ -1,103 +1,39 @@
 package flipfix
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import io.github.kdroidfilter.composemediaplayer.audio.AudioPlayer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import androidx.compose.ui.platform.LocalContext
 
-class FlipFixAudioController {
-
-    private var musicPlayer: AudioPlayer? = null
-    private var sfxPlayer: AudioPlayer? = null
+class FlipFixAudioController(private val context: Context) {
 
     var bgmEnabled by mutableStateOf(true)
     var sfxEnabled by mutableStateOf(true)
 
-    // Ubah nama agar tidak bentrok dengan setter otomatis Kotlin
     fun updateBgm(enabled: Boolean) {
         bgmEnabled = enabled
-        if (!enabled) stopBgm()
     }
 
     fun updateSfx(enabled: Boolean) {
         sfxEnabled = enabled
     }
 
-    fun playBgm(uri: String) {
-        if (!bgmEnabled) return
-        try {
-            if (musicPlayer == null) musicPlayer = AudioPlayer()
-            musicPlayer?.play(uri)
-        } catch (_: Exception) {}
-    }
-
-    fun stopBgm() {
-        try { musicPlayer?.stop() } catch (_: Exception) {}
-    }
-
-    fun playSfx(uri: String) {
-        if (!sfxEnabled) return
-        try {
-            if (sfxPlayer == null) sfxPlayer = AudioPlayer()
-            sfxPlayer?.stop()
-            sfxPlayer?.play(uri)
-        } catch (_: Exception) {}
-    }
-
-    fun dispose() {
-        try {
-            musicPlayer?.stop()
-            sfxPlayer?.stop()
-        } catch (_: Exception) {}
-    }
-
-    suspend fun loopBgm(scope: CoroutineScope, uri: String) {
-        if (!bgmEnabled) return
-        try {
-            if (musicPlayer == null) musicPlayer = AudioPlayer()
-            musicPlayer?.play(uri)
-        } catch (_: Exception) {}
-
-        while (scope.isActive && bgmEnabled) {
-            delay(250)
-            val duration = try { musicPlayer?.currentDuration() ?: 0L } catch (_: Exception) { 0L }
-            val position = try { musicPlayer?.currentPosition() ?: 0L } catch (_: Exception) { 0L }
-
-            if (duration > 0L && position >= (duration - 150L)) {
-                try { musicPlayer?.play(uri) } catch (_: Exception) {}
-            }
-        }
-    }
+    fun playBgm(resourceName: String) {}
+    fun stopBgm() {}
+    fun playSfx(resourceName: String) {}
+    fun dispose() {}
 }
 
 @Composable
 fun rememberFlipFixAudioController(): FlipFixAudioController {
-    val controller = remember { FlipFixAudioController() }
+    val context = LocalContext.current.applicationContext
+    val controller = remember { FlipFixAudioController(context) }
     DisposableEffect(Unit) {
         onDispose { controller.dispose() }
     }
     return controller
-}
-
-@Composable
-fun MusicEffect(
-    controller: FlipFixAudioController,
-    uri: String?,
-    enabled: Boolean
-) {
-    LaunchedEffect(uri, enabled) {
-        val scope = this
-        if (uri == null || !enabled) {
-            controller.stopBgm()
-            return@LaunchedEffect
-        }
-        controller.loopBgm(scope, uri)
-    }
 }
