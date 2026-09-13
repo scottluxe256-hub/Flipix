@@ -13,7 +13,6 @@ version = "1.0.0"
 kotlin {
     jvmToolchain(21)
 
-    // Bypass pengecekan metadata Kotlin untuk seluruh compiler
     compilerOptions {
         freeCompilerArgs.add("-Xskip-metadata-version-check")
     }
@@ -29,13 +28,13 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
-
-            implementation("io.github.kdroidfilter:composemediaplayer:0.11.4")
-            implementation("io.github.kdroidfilter:composemediaplayer-audio:0.11.4")
         }
 
         androidMain.dependencies {
             implementation("androidx.activity:activity-compose:1.9.3")
+            // Library resmi Media3 ExoPlayer buatan Google
+            implementation("androidx.media3:media3-exoplayer:1.4.1")
+            implementation("androidx.media3:media3-ui:1.4.1")
         }
     }
 }
@@ -53,22 +52,12 @@ android {
         versionName = "1.0"
     }
 
-    sourceSets {
-        getByName("main") {
-            assets.srcDirs("src/androidMain/assets")
-            res.srcDirs("src/androidMain/res")
-            manifest.srcFile("src/androidMain/AndroidManifest.xml")
-        }
-    }
-
     buildTypes {
         debug {
             isDebuggable = true
-            // Matikan optimasi D8 yang merusak Kotlin Metadata pada mode debug
             isMinifyEnabled = false
             isShrinkResources = false
         }
-
         release {
             isMinifyEnabled = false
             isShrinkResources = false

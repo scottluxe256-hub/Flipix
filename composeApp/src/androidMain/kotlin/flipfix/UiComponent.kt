@@ -1,7 +1,7 @@
 package flipfix
 
 import android.net.Uri
-import android.widget.VideoView
+import androidx.annotation.OptIn
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -30,6 +30,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +50,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
 
 private enum class AppScreen {
     Splash, Menu, Levels, Game
@@ -81,33 +89,18 @@ fun FlipFixApp() {
                     MainMenuScreen(
                         portrait = portrait,
                         audio = audio,
-                        onNext = {
-                            audio.playSfx(resourceUri("click.opus"))
-                            screen = AppScreen.Levels
-                        },
-                        onSettings = {
-                            audio.playSfx(resourceUri("click.opus"))
-                            showSettings = true
-                        },
-                        onRules = {
-                            audio.playSfx(resourceUri("click.opus"))
-                            showRules = true
-                        },
-                        onExit = {
-                            audio.playSfx(resourceUri("click.opus"))
-                        }
+                        onNext = { screen = AppScreen.Levels },
+                        onSettings = { showSettings = true },
+                        onRules = { showRules = true },
+                        onExit = {}
                     )
                 }
 
                 AppScreen.Levels -> {
                     LevelSelectScreen(
-                        onBack = {
-                            audio.playSfx(resourceUri("click.opus"))
-                            screen = AppScreen.Menu
-                        },
+                        onBack = { screen = AppScreen.Menu },
                         onLevelSelected = { level ->
                             selectedLevel = level
-                            audio.playSfx(resourceUri("click.opus"))
                             screen = AppScreen.Game
                         },
                         highestUnlockedLevel = highestUnlockedLevel
@@ -119,10 +112,7 @@ fun FlipFixApp() {
                         level = selectedLevel,
                         portrait = portrait,
                         audio = audio,
-                        onExit = {
-                            audio.playSfx(resourceUri("click.opus"))
-                            screen = AppScreen.Levels
-                        },
+                        onExit = { screen = AppScreen.Levels },
                         onNextLevel = {
                             val next = selectedLevel + 1
                             if (next <= 20) {
@@ -148,6 +138,7 @@ fun FlipFixApp() {
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun SplashScreen(
     portrait: Boolean,
@@ -156,25 +147,54 @@ private fun SplashScreen(
     val context = LocalContext.current
     val rawName = if (portrait) "aarch64" else "x64"
 
+    // Timeout pengaman 7.5 detik jika video gagal dimuat
+    LaunchedEffect(Unit) {
+        delay(7500)
+        onFinished()
+    }
+
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            val resId = context.resources.getIdentifier(rawName, "raw", context.packageName)
+            if (resId != 0) {
+                val uri = Uri.parse("android.resource://${context.packageName}/$resId")
+                setMediaItem(MediaItem.fromUri(uri))
+                prepare()
+                playWhenReady = true
+            } else {
+                onFinished()
+            }
+
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_ENDED) {
+                        onFinished()
+                    }
+                }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    // Fallback otomatis jika hardware tidak sanggup putar AV1
+                    onFinished()
+                }
+            })
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         AndroidView(
             factory = { ctx ->
-                VideoView(ctx).apply {
-                    val resId = ctx.resources.getIdentifier(rawName, "raw", ctx.packageName)
-                    if (resId != 0) {
-                        setVideoURI(Uri.parse("android.resource://${ctx.packageName}/$resId"))
-                        setOnCompletionListener { onFinished() }
-                        setOnErrorListener { _, _, _ ->
-                            onFinished()
-                            true
-                        }
-                        start()
-                    } else {
-                        onFinished()
-                    }
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = false
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -275,7 +295,6 @@ private fun SettingsDialog(audio: FlipFixAudioController, onDismiss: () -> Unit)
         title = { Text("Settings", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Gunakan fungsi update yang baru
                 SettingRow(title = "BGM", checked = audio.bgmEnabled, onCheckedChange = audio::updateBgm)
                 SettingRow(title = "SFX", checked = audio.sfxEnabled, onCheckedChange = audio::updateSfx)
             }
@@ -305,8 +324,4 @@ private fun RulesDialog(onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Mengerti") } }
     )
-}
-
-fun resourceUri(path: String): String {
-    return "file:///android_asset/$path"
 }
