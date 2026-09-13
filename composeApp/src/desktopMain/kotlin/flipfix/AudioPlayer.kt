@@ -66,7 +66,7 @@ class FlipFixAudioController {
             val duration = musicPlayer.currentDuration()
             val position = musicPlayer.currentPosition()
 
-            if (duration != null &&
+            if (duration != null && position != null &&
                 duration > 0L &&
                 position >= duration - 150L
             ) {

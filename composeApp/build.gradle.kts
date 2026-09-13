@@ -44,7 +44,7 @@ kotlin {
 
 android {
     namespace = "com.flipfix"
-    compileSdk = 35
+    compileSdk = 36 // <-- Diubah dari 35 ke 36
 
     defaultConfig {
         applicationId = "com.flipfix"
