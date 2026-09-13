@@ -20,12 +20,14 @@ class FlipFixAudioController {
     var bgmEnabled by mutableStateOf(true)
     var sfxEnabled by mutableStateOf(true)
 
-    fun toggleBgm(enabled: Boolean) {
+    @JvmName("updateBgmState")
+    fun setBgmEnabled(enabled: Boolean) {
         bgmEnabled = enabled
         if (!enabled) musicPlayer.stop()
     }
 
-    fun toggleSfx(enabled: Boolean) {
+    @JvmName("updateSfxState")
+    fun setSfxEnabled(enabled: Boolean) {
         sfxEnabled = enabled
     }
 
