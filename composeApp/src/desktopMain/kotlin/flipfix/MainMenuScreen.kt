@@ -8,14 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import composeApp.generated.resources.Res
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -27,59 +25,33 @@ fun MainMenuScreen(
     onRules: () -> Unit,
     onExit: () -> Unit
 ) {
-    GameViewport(
-        portrait = portrait
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+    GameViewport(portrait = portrait) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Image(
-                painter = painterResource(
-                    if (portrait) {
-                        Res.drawable.bg_android
-                    } else {
-                        Res.drawable.bg_windows
-                    }
-                ),
+                painter = painterResource(if (portrait) "bg_android.webp" else "bg_windows.webp"),
                 contentDescription = "FlipFix background",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
 
-            /*
-             * Top-left hamburger.
-             */
             FlipFixButton(
                 text = "☰",
                 color = Color(0xFF777777),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(20.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
                 onClick = onRules
             )
 
-            /*
-             * Top-right settings.
-             */
             FlipFixButton(
                 text = "⚙",
                 color = Color(0xFF777777),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(20.dp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(20.dp),
                 onClick = onSettings
             )
 
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .width(
-                        if (portrait) {
-                            270.dp
-                        } else {
-                            430.dp
-                        }
-                    ),
+                    .width(if (portrait) 270.dp else 430.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {

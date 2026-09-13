@@ -24,29 +24,19 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("org.jetbrains.compose.runtime:runtime:1.11.1")
-            implementation("org.jetbrains.compose.foundation:foundation:1.11.1")
-            implementation(
-                "org.jetbrains.compose.material3:material3:1.11.0-alpha07"
-            )
-            implementation(
-                "org.jetbrains.compose.components:components-resources:1.11.1"
-            )
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
 
-            implementation(
-                "io.github.kdroidfilter:composemediaplayer:0.11.4"
-            )
-            implementation(
-                "io.github.kdroidfilter:composemediaplayer-audio:0.11.4"
-            )
+            implementation("io.github.kdroidfilter:composemediaplayer:0.11.4")
+            implementation("io.github.kdroidfilter:composemediaplayer-audio:0.11.4")
         }
 
         androidMain.dependencies {
-            implementation("androidx.activity:activity-compose:1.12.0")
+            implementation("androidx.activity:activity-compose:1.9.3")
         }
 
         getByName("desktopMain").dependencies {
-            // PERBAIKAN 1: Gunakan implementation(...) standar
             implementation(compose.desktop.currentOs)
         }
     }
@@ -54,16 +44,21 @@ kotlin {
 
 android {
     namespace = "com.flipfix"
-
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.flipfix"
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 35
 
         versionCode = 1
         versionName = "1.0"
+    }
+
+    sourceSets {
+        getByName("main") {
+            assets.srcDirs("src/androidMain/assets")
+        }
     }
 
     buildTypes {
@@ -112,12 +107,7 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
 
-                val logoFile =
-                    project.file(
-                        "src/desktopMain/resources/logo.ico"
-                    )
-
-                // PERBAIKAN 2: Gunakan assignment langsung
+                val logoFile = project.file("src/desktopMain/resources/logo.ico")
                 if (logoFile.exists()) {
                     iconFile = logoFile
                 }
