@@ -21,9 +21,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Menggunakan Gradle CLI bawaan runner GitHub Actions langsung tanpa gradlew
+      # Kunci ke Gradle 8.5 agar stabil dan tidak mutasi classpath
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Build APK with Gradle CLI
         run: gradle assembleDebug --no-daemon
