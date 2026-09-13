@@ -2,7 +2,6 @@ package flipfix
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,54 +13,65 @@ import kotlinx.coroutines.isActive
 
 class FlipFixAudioController {
 
-    private val musicPlayer = AudioPlayer()
-    private val sfxPlayer = AudioPlayer()
+    private var musicPlayer: AudioPlayer? = null
+    private var sfxPlayer: AudioPlayer? = null
 
     var bgmEnabled by mutableStateOf(true)
     var sfxEnabled by mutableStateOf(true)
 
-    @JvmName("updateBgmState")
-    fun setBgmEnabled(enabled: Boolean) {
-        bgmEnabled = enabled
-        if (!enabled) musicPlayer.stop()
+    init {
+        try {
+            musicPlayer = AudioPlayer()
+            sfxPlayer = AudioPlayer()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    @JvmName("updateSfxState")
+    fun setBgmEnabled(enabled: Boolean) {
+        bgmEnabled = enabled
+        if (!enabled) musicPlayer?.stop()
+    }
+
     fun setSfxEnabled(enabled: Boolean) {
         sfxEnabled = enabled
     }
 
     fun playBgm(uri: String) {
         if (!bgmEnabled) return
-        musicPlayer.play(uri)
+        try { musicPlayer?.play(uri) } catch (_: Exception) {}
     }
 
     fun stopBgm() {
-        musicPlayer.stop()
+        try { musicPlayer?.stop() } catch (_: Exception) {}
     }
 
     fun playSfx(uri: String) {
         if (!sfxEnabled) return
-        sfxPlayer.stop()
-        sfxPlayer.play(uri)
+        try {
+            sfxPlayer?.stop()
+            sfxPlayer?.play(uri)
+        } catch (_: Exception) {}
     }
 
     fun dispose() {
-        musicPlayer.stop()
-        sfxPlayer.stop()
+        try {
+            musicPlayer?.stop()
+            sfxPlayer?.stop()
+        } catch (_: Exception) {}
     }
 
     suspend fun loopBgm(scope: CoroutineScope, uri: String) {
         if (!bgmEnabled) return
-        musicPlayer.play(uri)
+        try { musicPlayer?.play(uri) } catch (_: Exception) {}
 
         while (scope.isActive && bgmEnabled) {
             delay(250)
-            val duration = musicPlayer.currentDuration() ?: 0L
-            val position = musicPlayer.currentPosition() ?: 0L
+            val duration = try { musicPlayer?.currentDuration() ?: 0L } catch (_: Exception) { 0L }
+            val position = try { musicPlayer?.currentPosition() ?: 0L } catch (_: Exception) { 0L }
 
             if (duration > 0L && position >= (duration - 150L)) {
-                musicPlayer.play(uri)
+                try { musicPlayer?.play(uri) } catch (_: Exception) {}
             }
         }
     }
