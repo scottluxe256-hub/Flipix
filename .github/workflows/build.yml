@@ -40,24 +40,25 @@ jobs:
           sdkmanager "platforms;android-36"
           sdkmanager "build-tools;36.0.0"
 
-      - name: Setup Gradle 8.13
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "8.14.4"
 
       - name: Check Gradle
         run: gradle --version
 
       - name: Build debug APK
         run: |
-          gradle :androidApp:assembleDebug --no-daemon
+          gradle :composeApp:assembleDebug --no-daemon
 
       - name: Prepare APK
         shell: bash
         run: |
           mkdir -p release
 
-          APK=$(find androidApp/build/outputs/apk/debug \
+          # Path disesuaikan ke modul composeApp
+          APK=$(find composeApp/build/outputs/apk/debug \
             -type f \
             -name "*.apk" \
             | head -n 1)
@@ -65,7 +66,7 @@ jobs:
           if [ -z "$APK" ]; then
             echo "APK was not produced."
             echo "Searching build directory..."
-            find androidApp/build -type f -name "*.apk" || true
+            find composeApp/build -type f -name "*.apk" || true
             exit 1
           fi
 
@@ -96,10 +97,10 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Setup Gradle 8.13
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "8.14.4"
 
       - name: Check Gradle
         shell: pwsh
@@ -108,13 +109,14 @@ jobs:
       - name: Build Windows EXE
         shell: pwsh
         run: |
-          gradle :desktopApp:packageReleaseExe --no-daemon
+          gradle :composeApp:packageReleaseExe --no-daemon
 
       - name: Locate EXE
         shell: pwsh
         run: |
+          # Path disesuaikan ke modul composeApp
           $exe = Get-ChildItem `
-            -Path "desktopApp/build/compose/binaries" `
+            -Path "composeApp/build/compose/binaries" `
             -Filter "*.exe" `
             -Recurse `
             -ErrorAction SilentlyContinue `
@@ -124,7 +126,7 @@ jobs:
             Write-Host "EXE was not produced."
             Write-Host "Searching build directory..."
             Get-ChildItem `
-              -Path "desktopApp/build" `
+              -Path "composeApp/build" `
               -Filter "*.exe" `
               -Recurse `
               -ErrorAction SilentlyContinue
