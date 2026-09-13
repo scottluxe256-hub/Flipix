@@ -1,102 +1,37 @@
-name: FlipFix Build
+name: Build Android APK
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ "main", "master" ]
   pull_request:
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  android:
-    name: Android APK
+  build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup JDK 21
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: "21"
+          java-version: '21'
+          distribution: 'zulu'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.14.4"
 
-      - name: Build debug APK
-        run: |
-          gradle :composeApp:assembleDebug --no-daemon
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Prepare APK
-        shell: bash
-        run: |
-          mkdir -p release
-          APK=$(find composeApp/build/outputs/apk/debug -type f -name "*.apk" | head -n 1)
+      - name: Build Debug APK
+        run: ./gradlew :composeApp:assembleDebug --stacktrace
 
-          if [ -z "$APK" ]; then
-            echo "APK was not produced."
-            exit 1
-          fi
-
-          echo "APK found: $APK"
-          cp "$APK" release/FlipFix.apk
-
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FlipFix-Android
-          path: release/FlipFix.apk
-          if-no-files-found: error
-
-  windows:
-    name: Windows EXE
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.14.4"
-
-      - name: Build Windows EXE
-        shell: pwsh
-        run: |
-          gradle :composeApp:packageReleaseExe --no-daemon
-
-      - name: Locate EXE
-        shell: pwsh
-        run: |
-          $exe = Get-ChildItem -Path "composeApp/build/compose/binaries" -Filter "*.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-
-          if (-not $exe) {
-            Write-Host "EXE was not produced."
-            exit 1
-          }
-
-          Write-Host "EXE found: $($exe.FullName)"
-          New-Item -ItemType Directory -Force -Path "release" | Out-Null
-          Copy-Item $exe.FullName "release/FlipFix.exe" -Force
-
-      - name: Upload Windows EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: FlipFix-Windows
-          path: release/FlipFix.exe
-          if-no-files-found: error
+          name: FlipFix-Debug-APK
+          path: composeApp/build/outputs/apk/debug/composeApp-debug.apk

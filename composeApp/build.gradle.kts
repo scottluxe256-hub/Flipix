@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -14,17 +13,12 @@ version = "1.0.0"
 kotlin {
     jvmToolchain(21)
 
-    compilerOptions {
-        freeCompilerArgs.add("-Xskip-metadata-version-check")
-    }
-
+    // Hanya menyalakan target Android (Desktop JVM dihapus)
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
-
-    jvm("desktop")
 
     sourceSets {
         commonMain.dependencies {
@@ -38,10 +32,6 @@ kotlin {
 
         androidMain.dependencies {
             implementation("androidx.activity:activity-compose:1.9.3")
-        }
-
-        getByName("desktopMain").dependencies {
-            implementation(compose.desktop.currentOs)
         }
     }
 }
@@ -63,6 +53,7 @@ android {
         getByName("main") {
             assets.srcDirs("src/androidMain/assets")
             res.srcDirs("src/androidMain/res")
+            manifest.srcFile("src/androidMain/AndroidManifest.xml")
         }
     }
 
@@ -89,36 +80,6 @@ android {
             excludes += "/META-INF/io.netty.versions.properties"
             excludes += "/META-INF/LICENSE*"
             excludes += "/META-INF/NOTICE*"
-        }
-    }
-}
-
-compose.desktop {
-    application {
-        mainClass = "flipfix.MainKt"
-
-        nativeDistributions {
-            targetFormats(
-                TargetFormat.Exe,
-                TargetFormat.Msi
-            )
-
-            packageName = "FlipFix"
-            packageVersion = "1.0.0"
-
-            description = "FlipFix Memory Match Game"
-            vendor = "FlipFix"
-
-            windows {
-                console = false
-                dirChooser = true
-                perUserInstall = true
-
-                val logoFile = project.file("src/desktopMain/resources/logo.ico")
-                if (logoFile.exists()) {
-                    iconFile = logoFile
-                }
-            }
         }
     }
 }
