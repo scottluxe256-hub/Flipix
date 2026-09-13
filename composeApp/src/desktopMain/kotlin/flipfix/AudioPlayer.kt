@@ -3,10 +3,8 @@ package flipfix
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import io.github.kdroidfilter.composemediaplayer.audio.AudioPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -16,22 +14,21 @@ class FlipFixAudioController {
     private val musicPlayer = AudioPlayer()
     private val sfxPlayer = AudioPlayer()
 
-    var bgmEnabled by mutableStateOf(true)
-        private set
+    private val _bgmEnabled = mutableStateOf(true)
+    val bgmEnabled: Boolean get() = _bgmEnabled.value
 
-    var sfxEnabled by mutableStateOf(true)
-        private set
+    private val _sfxEnabled = mutableStateOf(true)
+    val sfxEnabled: Boolean get() = _sfxEnabled.value
 
     fun setBgmEnabled(enabled: Boolean) {
-        bgmEnabled = enabled
-
+        _bgmEnabled.value = enabled
         if (!enabled) {
             musicPlayer.stop()
         }
     }
 
     fun setSfxEnabled(enabled: Boolean) {
-        sfxEnabled = enabled
+        _sfxEnabled.value = enabled
     }
 
     fun playBgm(uri: String) {
