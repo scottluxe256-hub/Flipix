@@ -1,21 +1,21 @@
 package flipfix
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.flipfix.R
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun MainMenuScreen(
@@ -26,49 +26,31 @@ fun MainMenuScreen(
     onRules: () -> Unit,
     onExit: () -> Unit
 ) {
-    GameViewport(portrait = portrait) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(if (portrait) R.drawable.bg_android else R.drawable.bg_windows),
-                contentDescription = "FlipFix background",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1E1E2C))
+            .padding(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(text = "FlipFix Game", fontSize = 32.sp, color = Color.White)
 
-            FlipFixButton(
-                text = "☰",
-                color = Color(0xFF777777),
-                modifier = Modifier.align(Alignment.TopStart).padding(20.dp),
-                onClick = onRules
-            )
-
-            FlipFixButton(
-                text = "⚙",
-                color = Color(0xFF777777),
-                modifier = Modifier.align(Alignment.TopEnd).padding(20.dp),
-                onClick = onSettings
-            )
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .width(if (portrait) 270.dp else 430.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+            Button(
+                onClick = onNext,
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                FlipFixButton(
-                    text = "MULAI",
-                    color = Color(0xFF99D516),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onNext
-                )
+                Text("MULAI", fontSize = 18.sp)
+            }
 
-                FlipFixButton(
-                    text = "KELUAR",
-                    color = Color(0xFFF4B63F),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onExit
-                )
+            Button(
+                onClick = onExit,
+                modifier = Modifier.fillMaxWidth().height(50.dp)
+            ) {
+                Text("KELUAR", fontSize = 18.sp)
             }
         }
     }

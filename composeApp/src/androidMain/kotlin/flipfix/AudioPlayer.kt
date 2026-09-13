@@ -24,10 +24,7 @@ class FlipFixAudioController {
 
     fun setBgmEnabled(enabled: Boolean) {
         bgmEnabled = enabled
-
-        if (!enabled) {
-            musicPlayer.stop()
-        }
+        if (!enabled) musicPlayer.stop()
     }
 
     fun setSfxEnabled(enabled: Boolean) {
@@ -45,7 +42,6 @@ class FlipFixAudioController {
 
     fun playSfx(uri: String) {
         if (!sfxEnabled) return
-
         sfxPlayer.stop()
         sfxPlayer.play(uri)
     }
@@ -57,12 +53,10 @@ class FlipFixAudioController {
 
     suspend fun loopBgm(uri: String) {
         if (!bgmEnabled) return
-
         musicPlayer.play(uri)
 
         while (isActive && bgmEnabled) {
             delay(250)
-
             val duration = musicPlayer.currentDuration() ?: 0L
             val position = musicPlayer.currentPosition() ?: 0L
 
@@ -75,16 +69,10 @@ class FlipFixAudioController {
 
 @Composable
 fun rememberFlipFixAudioController(): FlipFixAudioController {
-    val controller = remember {
-        FlipFixAudioController()
-    }
-
+    val controller = remember { FlipFixAudioController() }
     DisposableEffect(Unit) {
-        onDispose {
-            controller.dispose()
-        }
+        onDispose { controller.dispose() }
     }
-
     return controller
 }
 
@@ -99,7 +87,6 @@ fun MusicEffect(
             controller.stopBgm()
             return@LaunchedEffect
         }
-
         controller.loopBgm(uri)
     }
 }
