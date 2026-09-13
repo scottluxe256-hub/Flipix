@@ -63,13 +63,10 @@ class FlipFixAudioController {
         while (isActive && bgmEnabled) {
             delay(250)
 
-            val duration = musicPlayer.currentDuration()
-            val position = musicPlayer.currentPosition()
+            val duration = musicPlayer.currentDuration() ?: 0L
+            val position = musicPlayer.currentPosition() ?: 0L
 
-            if (duration != null &&
-                duration > 0L &&
-                position >= duration - 150L
-            ) {
+            if (duration > 0L && position >= (duration - 150L)) {
                 musicPlayer.play(uri)
             }
         }
