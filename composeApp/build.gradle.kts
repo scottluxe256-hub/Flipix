@@ -46,10 +46,8 @@ kotlin {
         }
 
         getByName("desktopMain").dependencies {
-            add(
-                "implementation",
-                compose.desktop.currentOs
-            )
+            // PERBAIKAN 1: Gunakan implementation(...) standar
+            implementation(compose.desktop.currentOs)
         }
     }
 }
@@ -114,13 +112,14 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
 
-                val iconFile =
+                val logoFile =
                     project.file(
                         "src/desktopMain/resources/logo.ico"
                     )
 
-                if (iconFile.exists()) {
-                    iconFile.set(iconFile)
+                // PERBAIKAN 2: Gunakan assignment langsung
+                if (logoFile.exists()) {
+                    iconFile = logoFile
                 }
             }
         }
