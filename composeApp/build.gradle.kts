@@ -20,25 +20,22 @@ kotlin {
         }
     }
 
-    jvm("desktop") {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
-        }
-    }
+    jvm("desktop")
 
     sourceSets {
         commonMain.dependencies {
-            // Compose Multiplatform
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.components.resources)
+            implementation("org.jetbrains.compose.runtime:runtime:1.11.1")
+            implementation("org.jetbrains.compose.foundation:foundation:1.11.1")
+            implementation(
+                "org.jetbrains.compose.material3:material3:1.11.0-alpha07"
+            )
+            implementation(
+                "org.jetbrains.compose.components:components-resources:1.11.1"
+            )
 
-            // Media player
             implementation(
                 "io.github.kdroidfilter:composemediaplayer:0.11.4"
             )
-
             implementation(
                 "io.github.kdroidfilter:composemediaplayer-audio:0.11.4"
             )
@@ -48,8 +45,11 @@ kotlin {
             implementation("androidx.activity:activity-compose:1.12.0")
         }
 
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
+        getByName("desktopMain").dependencies {
+            add(
+                "implementation",
+                compose.desktop.currentOs
+            )
         }
     }
 }
@@ -61,15 +61,11 @@ android {
 
     defaultConfig {
         applicationId = "com.flipfix"
-
         minSdk = 23
         targetSdk = 36
 
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner =
-            "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -118,13 +114,13 @@ compose.desktop {
                 dirChooser = true
                 perUserInstall = true
 
-                val icon =
+                val iconFile =
                     project.file(
                         "src/desktopMain/resources/logo.ico"
                     )
 
-                if (icon.exists()) {
-                    iconFile.set(icon)
+                if (iconFile.exists()) {
+                    iconFile.set(iconFile)
                 }
             }
         }
