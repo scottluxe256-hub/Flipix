@@ -18,6 +18,11 @@ class FlipFixAudioController {
     private var sfxPlayer: AudioPlayer? = null
 
     var bgmEnabled by mutableStateOf(true)
+        set(value) {
+            field = value
+            if (!value) stopBgm()
+        }
+
     var sfxEnabled by mutableStateOf(true)
 
     init {
@@ -27,15 +32,6 @@ class FlipFixAudioController {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    fun setBgmEnabled(enabled: Boolean) {
-        bgmEnabled = enabled
-        if (!enabled) musicPlayer?.stop()
-    }
-
-    fun setSfxEnabled(enabled: Boolean) {
-        sfxEnabled = enabled
     }
 
     fun playBgm(uri: String) {
