@@ -21,31 +21,26 @@ kotlin {
     }
 
     jvm("desktop") {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_21)
-                }
-            }
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 
     sourceSets {
         commonMain.dependencies {
-            implementation("org.jetbrains.compose.runtime:runtime")
-            implementation("org.jetbrains.compose.foundation:foundation")
-            implementation("org.jetbrains.compose.material3:material3")
-            implementation("org.jetbrains.compose.components:components-resources")
+            // Compose Multiplatform
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.components.resources)
 
-            // WebP lokal tidak membutuhkan Kamel.
-            // Hapus ini kalau tidak ada image loading dari network.
-            // implementation("media.kamel:kamel-image-default:1.0.9")
-
+            // Media player
             implementation(
-                "io.github.kdroidfilter:composemediaplayer:0.10.1"
+                "io.github.kdroidfilter:composemediaplayer:0.11.4"
             )
+
             implementation(
-                "io.github.kdroidfilter:composemediaplayer-audio:0.10.1"
+                "io.github.kdroidfilter:composemediaplayer-audio:0.11.4"
             )
         }
 
@@ -53,7 +48,7 @@ kotlin {
             implementation("androidx.activity:activity-compose:1.12.0")
         }
 
-        getByName("desktopMain").dependencies {
+        desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
         }
     }
@@ -100,45 +95,6 @@ android {
             excludes += "/META-INF/io.netty.versions.properties"
         }
     }
-}
-
-/*
- * Android launcher icon.
- *
- * Source:
- * commonMain/composeResources/drawable/logo.png
- *
- * Destination:
- * androidMain/res/drawable/logo.png
- */
-val androidLogoSource =
-    layout.projectDirectory.file(
-        "src/commonMain/composeResources/drawable/logo.png"
-    )
-
-val androidLogoDestination =
-    layout.projectDirectory.file(
-        "src/androidMain/res/drawable/logo.png"
-    )
-
-val syncAndroidLauncherIcon by tasks.registering {
-    inputs.file(androidLogoSource)
-    outputs.file(androidLogoDestination)
-
-    doLast {
-        if (androidLogoSource.asFile.exists()) {
-            androidLogoDestination.asFile.parentFile.mkdirs()
-
-            androidLogoSource.asFile.copyTo(
-                androidLogoDestination.asFile,
-                overwrite = true
-            )
-        }
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn(syncAndroidLauncherIcon)
 }
 
 compose.desktop {
