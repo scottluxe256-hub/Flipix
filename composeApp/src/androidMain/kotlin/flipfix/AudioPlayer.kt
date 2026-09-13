@@ -18,25 +18,23 @@ class FlipFixAudioController {
     private var sfxPlayer: AudioPlayer? = null
 
     var bgmEnabled by mutableStateOf(true)
-        set(value) {
-            field = value
-            if (!value) stopBgm()
-        }
-
     var sfxEnabled by mutableStateOf(true)
 
-    init {
-        try {
-            musicPlayer = AudioPlayer()
-            sfxPlayer = AudioPlayer()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    fun setBgmEnabled(enabled: Boolean) {
+        bgmEnabled = enabled
+        if (!enabled) stopBgm()
+    }
+
+    fun setSfxEnabled(enabled: Boolean) {
+        sfxEnabled = enabled
     }
 
     fun playBgm(uri: String) {
         if (!bgmEnabled) return
-        try { musicPlayer?.play(uri) } catch (_: Exception) {}
+        try {
+            if (musicPlayer == null) musicPlayer = AudioPlayer()
+            musicPlayer?.play(uri)
+        } catch (_: Exception) {}
     }
 
     fun stopBgm() {
@@ -46,6 +44,7 @@ class FlipFixAudioController {
     fun playSfx(uri: String) {
         if (!sfxEnabled) return
         try {
+            if (sfxPlayer == null) sfxPlayer = AudioPlayer()
             sfxPlayer?.stop()
             sfxPlayer?.play(uri)
         } catch (_: Exception) {}
@@ -60,7 +59,10 @@ class FlipFixAudioController {
 
     suspend fun loopBgm(scope: CoroutineScope, uri: String) {
         if (!bgmEnabled) return
-        try { musicPlayer?.play(uri) } catch (_: Exception) {}
+        try {
+            if (musicPlayer == null) musicPlayer = AudioPlayer()
+            musicPlayer?.play(uri)
+        } catch (_: Exception) {}
 
         while (scope.isActive && bgmEnabled) {
             delay(250)

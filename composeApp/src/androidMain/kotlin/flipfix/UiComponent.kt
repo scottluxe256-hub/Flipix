@@ -1,5 +1,7 @@
 package flipfix
 
+import android.net.Uri
+import android.widget.VideoView
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -28,7 +30,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +43,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import androidx.compose.ui.viewinterop.AndroidView
 
 private enum class AppScreen {
     Splash, Menu, Levels, Game
@@ -151,29 +153,32 @@ private fun SplashScreen(
     portrait: Boolean,
     onFinished: () -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        delay(1500)
-        onFinished()
-    }
+    val context = LocalContext.current
+    val rawName = if (portrait) "aarch64" else "x64"
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF1E1E2C)),
+        modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "FlipFix",
-                color = Color.White,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Loading Game...",
-                color = Color.Gray,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
+        AndroidView(
+            factory = { ctx ->
+                VideoView(ctx).apply {
+                    val resId = ctx.resources.getIdentifier(rawName, "raw", ctx.packageName)
+                    if (resId != 0) {
+                        setVideoURI(Uri.parse("android.resource://${ctx.packageName}/$resId"))
+                        setOnCompletionListener { onFinished() }
+                        setOnErrorListener { _, _, _ ->
+                            onFinished()
+                            true
+                        }
+                        start()
+                    } else {
+                        onFinished()
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
