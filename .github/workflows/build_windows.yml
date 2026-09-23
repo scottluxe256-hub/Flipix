@@ -7,7 +7,11 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019 # Menggunakan VS2019 yang lebih stabil untuk kompilasi C++ Flutter
+    runs-on: windows-latest
+
+    # Variabel CL ini otomatis dibaca oleh MSVC compiler untuk melewati error coroutine deprecation
+    env:
+      CL: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
 
     steps:
       - name: Checkout Code
