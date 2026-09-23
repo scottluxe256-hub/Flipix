@@ -4,6 +4,7 @@ import '../../core/audio_manager.dart';
 import '../../core/game_state.dart';
 import '../components/card_widget.dart';
 import '../components/glass_panel.dart';
+import 'result_popup.dart'; // Pastikan memanggil ResultPopup
 
 class GameplayScreen extends StatefulWidget {
   final int level;
@@ -54,12 +55,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeLeft > 0) {
-        setState(() {
-          _timeLeft--;
-        });
+        setState(() { _timeLeft--; });
       } else {
         _timer?.cancel();
-        _showGameOverDialog();
+        _showResult(isWin: false);
       }
     });
   }
@@ -69,9 +68,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
     AudioManager.instance.playSfx('flip.m4a');
 
-    setState(() {
-      _flipped[index] = true;
-    });
+    setState(() { _flipped[index] = true; });
 
     if (_previousIndex == null) {
       _previousIndex = index;
@@ -91,9 +88,13 @@ class _GameplayScreenState extends State<GameplayScreen> {
         });
 
         if (_pairsFound == _maxPairs) {
-          _timer?.cancel();
-          GameState.instance.unlockNextLevel();
-          _showWinDialog();
+          _timer?.cancel(); // Matikan timer sebelum proses apapun
+          try {
+            GameState.instance.unlockNextLevel();
+          } catch (e) {
+            debugPrint('Error unlocking level: $e');
+          }
+          _showResult(isWin: true);
         }
       } else {
         await Future.delayed(const Duration(milliseconds: 700));
@@ -107,74 +108,32 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
   }
 
-  void _showWinDialog() {
-    AudioManager.instance.playSfx('win.m4a');
+  void _showResult({required bool isWin}) {
+    AudioManager.instance.playSfx(isWin ? 'win.m4a' : 'gameover.m4a');
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Level Completed! 🎉', textAlign: TextAlign.center),
-        content: Text('Score: $_score\nTime Remaining: ${_timeLeft}s'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Menu'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (widget.level < 10) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GameplayScreen(level: widget.level + 1),
-                  ),
-                );
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Next Level'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGameOverDialog() {
-    AudioManager.instance.playSfx('gameover.m4a');
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Game Over 😞', textAlign: TextAlign.center),
-        content: const Text('Time is up! Try again.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Menu'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GameplayScreen(level: widget.level),
-                ),
-              );
-            },
-            child: const Text('Try Again'),
-          ),
-        ],
+      builder: (_) => ResultPopup(
+        isWin: isWin,
+        score: _score + _timeLeft, // Tambahan bonus waktu
+        onNextOrRetry: () {
+          Navigator.pop(context);
+          if (isWin && widget.level < 10) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => GameplayScreen(level: widget.level + 1)),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => GameplayScreen(level: widget.level)),
+            );
+          }
+        },
+        onExit: () {
+          Navigator.pop(context);
+          Navigator.pop(context); // Kembali ke menu
+        },
       ),
     );
   }
@@ -188,7 +147,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF87CEFA),
+      backgroundColor: Colors.lightBlue.shade100, // Biru langit soft
       body: SafeArea(
         child: Column(
           children: [
@@ -199,12 +158,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Level ${widget.level}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Time: ${_timeLeft}s',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Score: $_score',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Level ${widget.level}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Time: ${_timeLeft}s', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Score: $_score', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                   ],
                 ),
               ),
@@ -212,27 +168,27 @@ class _GameplayScreenState extends State<GameplayScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  padding: const EdgeInsets.all(16),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: _maxPairs > 8 ? 6 : 4,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.8,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    // Menggunakan Wrap agar kartu selalu rata tengah (center alignment)
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: List.generate(_cards.length, (index) {
+                        return SizedBox(
+                          width: 85,
+                          height: 110,
+                          child: CardWidget(
+                            imagePath: _cards[index],
+                            isFlipped: _flipped[index],
+                            isMatched: _matched[index],
+                            onTap: () => _onCardTap(index),
+                          ),
+                        );
+                      }),
                     ),
-                    itemCount: _cards.length,
-                    itemBuilder: (context, index) {
-                      return CardWidget(
-                        imageAsset: _cards[index],
-                        isFlipped: _flipped[index],
-                        isMatched: _matched[index],
-                        onTap: () => _onCardTap(index),
-                      );
-                    },
                   ),
                 ),
               ),

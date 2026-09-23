@@ -5,11 +5,11 @@ import 'ui/screens/intro_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AudioManager.instance.init();
-  runApp(const FlipCardGame());
+  runApp(const FlipCardApp());
 }
 
-class FlipCardGame extends StatelessWidget {
-  const FlipCardGame({super.key});
+class FlipCardApp extends StatelessWidget {
+  const FlipCardApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,9 +17,10 @@ class FlipCardGame extends StatelessWidget {
       title: 'Flip Card Game',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
+        brightness: Brightness.dark,
+        fontFamily: 'Segoe UI', // Font bawaan Windows
       ),
+      // Akan diarahkan ke IntroScreen terlebih dahulu
       home: const IntroScreen(),
     );
   }

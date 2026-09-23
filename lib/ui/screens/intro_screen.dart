@@ -16,19 +16,25 @@ class _IntroScreenState extends State<IntroScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/video/x64.mp4')
-      ..initialize().then((_) {
-        setState(() {
-          _isInitialized = true;
-        });
-        _controller.play();
-        _controller.setLooping(false);
-        _controller.addListener(() {
-          if (_controller.value.position >= _controller.value.duration) {
-            _navigateToLobby();
-          }
-        });
+    _controller = VideoPlayerController.asset('assets/video/x64.mp4');
+    
+    _controller.initialize().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _isInitialized = true;
       });
+      _controller.play();
+      _controller.setLooping(false);
+      _controller.addListener(() {
+        if (_controller.value.position >= _controller.value.duration) {
+          _navigateToLobby();
+        }
+      });
+    }).catchError((error) {
+      // Jika codec video ditolak oleh OS (misal Windows), lewati dan masuk ke Lobby
+      debugPrint("Video gagal diload: $error");
+      _navigateToLobby(); 
+    });
   }
 
   void _navigateToLobby() {

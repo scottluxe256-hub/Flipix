@@ -35,7 +35,7 @@ class _SettingsPopupState extends State<SettingsPopup> {
             onChanged: (value) {
               setState(() => bgmEnabled = value);
               AudioManager.instance.toggleBgm(value);
-              AudioManager.instance.playSfx('click.opus');
+              AudioManager.instance.playSfx('click.m4a');
             },
           ),
           SwitchListTile(
@@ -45,7 +45,7 @@ class _SettingsPopupState extends State<SettingsPopup> {
             onChanged: (value) {
               setState(() => sfxEnabled = value);
               AudioManager.instance.toggleSfx(value);
-              AudioManager.instance.playSfx('click.opus');
+              AudioManager.instance.playSfx('click.m4a');
             },
           ),
         ],
@@ -53,7 +53,7 @@ class _SettingsPopupState extends State<SettingsPopup> {
       actions: [
         TextButton(
           onPressed: () {
-            AudioManager.instance.playSfx('click.opus');
+            AudioManager.instance.playSfx('click.m4a');
             Navigator.pop(context);
           },
           child: const Text('Tutup', style: TextStyle(color: Colors.blueAccent)),

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/audio_manager.dart';
 import 'level_screen.dart';
+import 'settings_popup.dart'; // Pastikan path ini sesuai dengan letak file kamu
 
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
@@ -34,8 +36,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 top: 20,
                 left: 20,
                 child: IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.grey, size: 32),
-                  onPressed: () {},
+                  // Ikon menu berwarna abu-abu solid
+                  icon: const Icon(Icons.menu, color: Color(0xFF616161), size: 32),
+                  onPressed: () {
+                    AudioManager.instance.playSfx('click.m4a');
+                  },
                 ),
               ),
               Positioned(
@@ -48,18 +53,28 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         AudioManager.instance.isBgmOn
                             ? Icons.volume_up
                             : Icons.volume_off,
-                        color: Colors.grey,
+                        color: const Color(0xFF616161), // Warna abu-abu
                         size: 30,
                       ),
                       onPressed: () {
+                        AudioManager.instance.playSfx('click.m4a');
                         setState(() {
-                          AudioManager.instance.toggleBgm();
+                          AudioManager.instance.toggleBgm(!AudioManager.instance.isBgmOn);
                         });
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.settings, color: Colors.grey, size: 32),
-                      onPressed: () {},
+                      icon: const Icon(Icons.settings, color: Color(0xFF616161), size: 32),
+                      onPressed: () {
+                        AudioManager.instance.playSfx('click.m4a');
+                        showDialog(
+                          context: context,
+                          builder: (_) => const SettingsPopup(),
+                        ).then((_) {
+                          // Trigger render ulang setelah popup ditutup (untuk update icon volume)
+                          setState(() {}); 
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -99,7 +114,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       ),
                       onPressed: () {
                         AudioManager.instance.playSfx('click.m4a');
-                        exit(0);
+                        // Metode exit yang aman untuk Flutter
+                        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+                          exit(0);
+                        } else {
+                          SystemNavigator.pop();
+                        }
                       },
                       child: const Text(
                         'EXIT',
