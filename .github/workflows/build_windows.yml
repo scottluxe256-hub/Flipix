@@ -28,6 +28,10 @@ jobs:
       - name: Generate App Icon
         run: dart run flutter_launcher_icons
 
+      # Mencegah bentrok versi C++ bawaan plugin audioplayers dengan MSVC terbaru
+      - name: Fix C++ Error
+        run: Add-Content -Path windows/CMakeLists.txt -Value "add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)"
+
       - name: Build Windows Executable
         run: flutter build windows --release
 
