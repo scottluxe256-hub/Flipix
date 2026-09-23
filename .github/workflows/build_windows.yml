@@ -21,6 +21,12 @@ jobs:
           channel: 'stable'
           architecture: x64
 
+      # [TAMBAHAN BARU] Memaksa Flutter mengaktifkan dan membuat folder windows/ jika belum ada
+      - name: Enable Windows Desktop Support & Create Windows Runner
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --platforms=windows .
+
       - name: Get Dependencies
         run: flutter pub get
 
