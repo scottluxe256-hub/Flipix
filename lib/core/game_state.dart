@@ -46,6 +46,12 @@ class GameState extends ChangeNotifier {
     }
   }
 
+  Future<void> resetProgress() async {
+    highestLevelUnlocked = 1;
+    notifyListeners();
+    await _save();
+  }
+
   Future<void> _save() async {
     try {
       final file = _getSaveFile();

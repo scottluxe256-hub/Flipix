@@ -15,8 +15,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
-    // Putar BGM Lobby
-    AudioManager.instance.playBgm('output.m4a');
+    // Putar BGM Lobby setelah frame pertama selesai agar tidak tertabrak dispose screen sebelumnya
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AudioManager.instance.playBgm('output.m4a');
+    });
   }
 
   void _showRules() {

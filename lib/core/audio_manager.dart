@@ -7,11 +7,24 @@ class AudioManager {
   final AudioPlayer _bgmPlayer = AudioPlayer();
   String? _currentBgmTrack;
 
+  // Pool AudioPlayer yang digunakan kembali untuk mencegah memory leak & CPU spike
+  final List<AudioPlayer> _sfxPool = [];
+  int _sfxPoolIndex = 0;
+  static const int _sfxPoolSize = 4;
+
   bool isBgmEnabled = true;
   bool isSfxEnabled = true;
 
+  String? get currentBgmTrack => _currentBgmTrack;
+
   Future<void> init() async {
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+    // Inisialisasi pool SFX tetap sekali saja
+    for (int i = 0; i < _sfxPoolSize; i++) {
+      final player = AudioPlayer();
+      await player.setReleaseMode(ReleaseMode.stop);
+      _sfxPool.add(player);
+    }
   }
 
   void playBgm(String filename) {
@@ -29,8 +42,16 @@ class AudioManager {
 
   void playSfx(String filename) {
     if (!isSfxEnabled) return;
-    // Menggunakan instance AudioPlayer terpisah agar SFX bisa overlap saat diklik cepat
-    AudioPlayer().play(AssetSource('audio/$filename'));
+    if (_sfxPool.isEmpty) {
+      // Fallback jika belum terinit
+      AudioPlayer().play(AssetSource('audio/$filename'));
+      return;
+    }
+    // Menggunakan kembali player dari pool (tidak spawn C++ audio thread baru setiap klik)
+    final player = _sfxPool[_sfxPoolIndex];
+    _sfxPoolIndex = (_sfxPoolIndex + 1) % _sfxPoolSize;
+    player.stop();
+    player.play(AssetSource('audio/$filename'));
   }
 
   void toggleBgm(bool value) {

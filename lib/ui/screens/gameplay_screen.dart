@@ -23,7 +23,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   List<bool> _isMatched = [];
 
   int _score = 0;
-  late int _timeLeft;
+  late final ValueNotifier<int> _timeLeftNotifier;
 
   int _prepTime = 3;
   bool _isMemorizing = true;
@@ -36,8 +36,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    // Waktu mulai dari 60 detik, berkurang sedikit di level tinggi
-    _timeLeft = max(30, 60 - (widget.level - 1) * 3);
+    final initialTime = max(30, 60 - (widget.level - 1) * 3);
+    // ValueNotifier mengisolasi rebuild teks timer tanpa memicu rebuild seluruh grid kartu tiap detik (hemat CPU)
+    _timeLeftNotifier = ValueNotifier<int>(initialTime);
 
     _setupCards();
     _startPrepTimer();
@@ -81,19 +82,19 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
     // Mulai BGM ingame
     Future.delayed(const Duration(milliseconds: 300), () {
-      AudioManager.instance.playBgm('ingame.m4a');
+      if (mounted && !_isGameOver) {
+        AudioManager.instance.playBgm('ingame.m4a');
+      }
     });
 
-    // Timer waktu game (Fokus murni ke waktu sebagai penentu menang/kalah)
+    // Timer waktu game: hanya mengupdate ValueNotifier sehingga tidak me-rebuild kartu
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timeLeft > 1) {
-        if (mounted) setState(() => _timeLeft--);
+      if (_timeLeftNotifier.value > 1) {
+        _timeLeftNotifier.value--;
       } else {
         timer.cancel();
-        if (mounted) {
-          setState(() => _timeLeft = 0);
-          _endGame(isWin: false);
-        }
+        _timeLeftNotifier.value = 0;
+        _endGame(isWin: false);
       }
     });
   }
@@ -142,7 +143,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   void _checkWinCondition() {
     // Menang jika SEMUA kartu berhasil dicocokkan sebelum waktu habis
-    // Skor tidak dimodifikasi lagi agar sama persis dengan indikator atas
     if (!_isMatched.contains(false)) {
       _endGame(isWin: true);
     }
@@ -152,7 +152,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
     if (_isGameOver) return;
     _isGameOver = true;
     _timer?.cancel();
-    AudioManager.instance.stopBgm();
 
     if (isWin) {
       AudioManager.instance.playSfx('level-completed.m4a');
@@ -185,9 +184,10 @@ class _GameplayScreenState extends State<GameplayScreen> {
         },
         onExit: () {
           AudioManager.instance.playSfx('click.m4a');
-          AudioManager.instance.stopBgm();
-          // Keluar dari ingame langsung mengarah ke Lobby dan memutar output.m4a
-          AudioManager.instance.playBgm('output.m4a');
+          if (AudioManager.instance.currentBgmTrack == 'ingame.m4a') {
+            AudioManager.instance.stopBgm();
+          }
+          // Keluar dari ingame langsung mengarah ke Lobby (LobbyScreen yang akan memutar output.m4a)
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const LobbyScreen()),
@@ -201,7 +201,12 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    AudioManager.instance.stopBgm();
+    _timeLeftNotifier.dispose();
+    // Hanya hentikan BGM jika yang berputar saat ini adalah ingame.m4a
+    // Jangan matikan output.m4a yang baru saja dimulai untuk LobbyScreen
+    if (AudioManager.instance.currentBgmTrack == 'ingame.m4a') {
+      AudioManager.instance.stopBgm();
+    }
     super.dispose();
   }
 
@@ -251,7 +256,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Panel Atas Glassmorphism
+              // Panel Atas Glassmorphism (Ringan, tanpa BackdropFilter CPU heavy)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: GlassPanel(
@@ -264,8 +269,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         tooltip: 'Kembali',
                         onPressed: () {
                           AudioManager.instance.playSfx('click.m4a');
-                          AudioManager.instance.stopBgm();
-                          AudioManager.instance.playBgm('output.m4a');
+                          if (AudioManager.instance.currentBgmTrack == 'ingame.m4a') {
+                            AudioManager.instance.stopBgm();
+                          }
                           Navigator.pop(context);
                         },
                       ),
@@ -297,14 +303,20 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         children: [
                           const Icon(Icons.timer_outlined, color: Color(0xFFDC2626), size: 26),
                           const SizedBox(width: 6),
-                          Text(
-                            '00:${_timeLeft.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                              color: Color(0xFFDC2626),
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
+                          // ValueListenableBuilder hanya me-rebuild teks angka timer, kartu tidak ikut ter-rebuild
+                          ValueListenableBuilder<int>(
+                            valueListenable: _timeLeftNotifier,
+                            builder: (context, timeLeft, _) {
+                              return Text(
+                                '00:${timeLeft.toString().padLeft(2, '0')}',
+                                style: const TextStyle(
+                                  color: Color(0xFFDC2626),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -340,6 +352,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               itemCount: _cards.length,
                               itemBuilder: (context, index) {
                                 return CardWidget(
+                                  key: ValueKey('card_${widget.level}_$index'),
                                   isFlipped: _isFlipped[index],
                                   imagePath: _cards[index],
                                   onTap: () => _onCardTap(index),
