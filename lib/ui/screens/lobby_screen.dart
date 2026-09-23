@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/audio_manager.dart';
 import 'level_screen.dart';
-import 'settings_popup.dart'; // Pastikan path ini sesuai dengan letak file kamu
+import '../components/settings_popup.dart'; // Pastikan path ini sesuai dengan letak file kamu
 
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
@@ -68,9 +68,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       onPressed: () {
                         AudioManager.instance.playSfx('click.m4a');
                         showDialog(
-                          context: context,
-                          builder: (_) => const SettingsPopup(),
-                        ).then((_) {
+  context: context,
+  builder: (_) => SettingsPopup(), 
+).then((_) {
                           // Trigger render ulang setelah popup ditutup (untuk update icon volume)
                           setState(() {}); 
                         });

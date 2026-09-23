@@ -4,7 +4,7 @@ import '../../core/audio_manager.dart';
 import '../../core/game_state.dart';
 import '../components/card_widget.dart';
 import '../components/glass_panel.dart';
-import 'result_popup.dart'; // Pastikan memanggil ResultPopup
+import '../components/result_popup.dart'; // Pastikan memanggil ResultPopup
 
 class GameplayScreen extends StatefulWidget {
   final int level;
