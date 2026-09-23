@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/audio_manager.dart';
 import '../../core/game_state.dart';
 import '../components/card_widget.dart';
 import '../components/glass_panel.dart';
-import '../components/result_popup.dart'; // Pastikan memanggil ResultPopup
+import '../components/result_popup.dart';
 
 class GameplayScreen extends StatefulWidget {
   final int level;
@@ -15,109 +17,160 @@ class GameplayScreen extends StatefulWidget {
 }
 
 class _GameplayScreenState extends State<GameplayScreen> {
-  late List<String> _cards;
-  late List<bool> _flipped;
-  late List<bool> _matched;
+  List<String> _cards = [];
+  List<bool> _isFlipped = [];
+  List<bool> _isMatched = [];
 
-  int? _previousIndex;
-  bool _isBusy = false;
-  int _pairsFound = 0;
-  int _maxPairs = 6;
   int _score = 0;
-  int _timeLeft = 60;
+  late int _timeLeft;
+
+  int _prepTime = 3;
+  bool _isMemorizing = true;
   Timer? _timer;
+
+  int? _firstSelectedIndex;
+  bool _isProcessing = false;
+  bool _isGameOver = false;
 
   @override
   void initState() {
     super.initState();
-    _setupLevel();
-    _startTimer();
-    AudioManager.instance.playBgm('bgm_ingame.m4a');
+    // Waktu mulai dari 60 detik, sedikit berkurang di level tinggi tapi tetap adil
+    _timeLeft = max(30, 60 - (widget.level - 1) * 3);
+
+    _setupCards();
+    _startPrepTimer();
   }
 
-  void _setupLevel() {
-    _maxPairs = (widget.level + 2).clamp(3, 11);
-    _timeLeft = 45 + (widget.level * 5);
+  void _setupCards() {
+    final int pairsCount = min(widget.level + 2, 11);
+    final List<String> selectedImages = [];
+    for (int i = 1; i <= pairsCount; i++) {
+      selectedImages.add('assets/images/card_$i.webp');
+    }
 
-    List<String> availableAssets = List.generate(
-      11,
-      (index) => 'assets/images/card_${index + 1}.webp',
-    );
-    availableAssets.shuffle();
+    _cards = [...selectedImages, ...selectedImages];
+    _cards.shuffle(Random());
 
-    List<String> selectedAssets = availableAssets.take(_maxPairs).toList();
-    _cards = [...selectedAssets, ...selectedAssets]..shuffle();
-
-    _flipped = List.filled(_cards.length, false);
-    _matched = List.filled(_cards.length, false);
+    // Saat memorizing di awal, semua kartu TERBUKA
+    _isFlipped = List.generate(_cards.length, (index) => true);
+    _isMatched = List.generate(_cards.length, (index) => false);
   }
 
-  void _startTimer() {
+  void _startPrepTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timeLeft > 0) {
-        setState(() { _timeLeft--; });
+      if (_prepTime > 1) {
+        if (mounted) setState(() => _prepTime--);
       } else {
-        _timer?.cancel();
-        _showResult(isWin: false);
+        timer.cancel();
+        _startGame();
       }
     });
   }
 
-  void _onCardTap(int index) async {
-    if (_isBusy || _flipped[index] || _matched[index]) return;
+  void _startGame() {
+    AudioManager.instance.playSfx('game-start.m4a');
+    if (!mounted) return;
+
+    setState(() {
+      _isMemorizing = false;
+      // Tutup semua kartu saat game mulai
+      _isFlipped = List.generate(_cards.length, (index) => false);
+    });
+
+    // Mulai BGM ingame
+    Future.delayed(const Duration(milliseconds: 300), () {
+      AudioManager.instance.playBgm('ingame.m4a');
+    });
+
+    // Timer waktu game (Fokus murni ke waktu sebagai penentu menang/kalah)
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_timeLeft > 1) {
+        if (mounted) setState(() => _timeLeft--);
+      } else {
+        timer.cancel();
+        if (mounted) {
+          setState(() => _timeLeft = 0);
+          _endGame(isWin: false);
+        }
+      }
+    });
+  }
+
+  void _onCardTap(int index) {
+    if (_isMemorizing || _isProcessing || _isGameOver || _isMatched[index] || _isFlipped[index]) return;
 
     AudioManager.instance.playSfx('flip.m4a');
+    setState(() => _isFlipped[index] = true);
 
-    setState(() { _flipped[index] = true; });
-
-    if (_previousIndex == null) {
-      _previousIndex = index;
+    if (_firstSelectedIndex == null) {
+      _firstSelectedIndex = index;
     } else {
-      _isBusy = true;
-      int prev = _previousIndex!;
+      _isProcessing = true;
+      final int first = _firstSelectedIndex!;
+      final int second = index;
+      _firstSelectedIndex = null;
 
-      if (_cards[prev] == _cards[index]) {
-        AudioManager.instance.playSfx('match.m4a');
-        setState(() {
-          _matched[prev] = true;
-          _matched[index] = true;
-          _pairsFound++;
-          _score += 50;
-          _previousIndex = null;
-          _isBusy = false;
+      if (_cards[first] == _cards[second]) {
+        // Pasangan Cocok (Benar)
+        Future.delayed(const Duration(milliseconds: 250), () {
+          if (!mounted) return;
+          AudioManager.instance.playSfx('benar.m4a');
+          setState(() {
+            _isMatched[first] = true;
+            _isMatched[second] = true;
+            _score += 50;
+            _isProcessing = false;
+          });
+          _checkWinCondition();
         });
-
-        if (_pairsFound == _maxPairs) {
-          _timer?.cancel(); // Matikan timer sebelum proses apapun
-          try {
-            GameState.instance.unlockNextLevel();
-          } catch (e) {
-            debugPrint('Error unlocking level: $e');
-          }
-          _showResult(isWin: true);
-        }
       } else {
-        await Future.delayed(const Duration(milliseconds: 700));
-        setState(() {
-          _flipped[prev] = false;
-          _flipped[index] = false;
-          _previousIndex = null;
-          _isBusy = false;
+        // Salah: Balik kembali tanpa mengurangi nyawa (murni fokus waktu)
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (!mounted) return;
+          AudioManager.instance.playSfx('salah.m4a');
+          setState(() {
+            _isFlipped[first] = false;
+            _isFlipped[second] = false;
+            _isProcessing = false;
+          });
         });
       }
     }
   }
 
-  void _showResult({required bool isWin}) {
-    AudioManager.instance.playSfx(isWin ? 'win.m4a' : 'gameover.m4a');
+  void _checkWinCondition() {
+    // Menang jika SEMUA kartu berhasil dicocokkan sebelum waktu habis
+    if (!_isMatched.contains(false)) {
+      // Bonus waktu: sisa detik x 10 poin
+      _score += _timeLeft * 10;
+      _endGame(isWin: true);
+    }
+  }
+
+  void _endGame({required bool isWin}) {
+    if (_isGameOver) return;
+    _isGameOver = true;
+    _timer?.cancel();
+    AudioManager.instance.stopBgm();
+
+    if (isWin) {
+      AudioManager.instance.playSfx('level-completed.m4a');
+      // Buka level berikutnya secara persisten
+      GameState.instance.unlockLevel(widget.level + 1);
+    } else {
+      AudioManager.instance.playSfx('game-over.m4a');
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ResultPopup(
+      builder: (context) => ResultPopup(
         isWin: isWin,
-        score: _score + _timeLeft, // Tambahan bonus waktu
+        score: _score,
         onNextOrRetry: () {
-          Navigator.pop(context);
+          AudioManager.instance.playSfx('click.m4a');
+          Navigator.pop(context); // Tutup dialog
           if (isWin && widget.level < 10) {
             Navigator.pushReplacement(
               context,
@@ -131,8 +184,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
           }
         },
         onExit: () {
-          Navigator.pop(context);
-          Navigator.pop(context); // Kembali ke menu
+          AudioManager.instance.playSfx('click.m4a');
+          Navigator.pop(context); // Tutup dialog
+          Navigator.pop(context); // Kembali ke level screen
         },
       ),
     );
@@ -141,59 +195,187 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    AudioManager.instance.stopBgm();
     super.dispose();
+  }
+
+  int _getCrossAxisCount(int totalCards) {
+    if (totalCards <= 6) return 3;
+    if (totalCards <= 8) return 4;
+    if (totalCards <= 10) return 5;
+    if (totalCards <= 12) return 4;
+    if (totalCards <= 16) return 4;
+    if (totalCards <= 18) return 6;
+    return 6;
+  }
+
+  double _getMaxGridWidth(int totalCards) {
+    if (totalCards <= 6) return 450;
+    if (totalCards <= 8) return 580;
+    if (totalCards <= 10) return 720;
+    if (totalCards <= 12) return 650;
+    if (totalCards <= 16) return 650;
+    return 880;
   }
 
   @override
   Widget build(BuildContext context) {
+    final int crossAxisCount = _getCrossAxisCount(_cards.length);
+    final double maxGridWidth = _getMaxGridWidth(_cards.length);
+
     return Scaffold(
-      backgroundColor: Colors.lightBlue.shade100, // Biru langit soft
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: GlassPanel(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Level ${widget.level}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Time: ${_timeLeft}s', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Score: $_score', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    // Menggunakan Wrap agar kartu selalu rata tengah (center alignment)
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: List.generate(_cards.length, (index) {
-                        return SizedBox(
-                          width: 85,
-                          height: 110,
-                          child: CardWidget(
-                            imagePath: _cards[index],
-                            isFlipped: _flipped[index],
-                            isMatched: _matched[index],
-                            onTap: () => _onCardTap(index),
+      body: Container(
+        // Background Biru Langit Soft (Soft Sky Blue) khusus ingame
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFE0F2FE), // Biru langit sangat lembut (atas)
+              Color(0xFFBAE6FD), // Biru langit cerah lembut (bawah)
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Panel Atas Glassmorphism
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: GlassPanel(
+                  height: 75,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A), size: 28),
+                        tooltip: 'Kembali',
+                        onPressed: () {
+                          AudioManager.instance.playSfx('click.m4a');
+                          AudioManager.instance.stopBgm();
+                          Navigator.pop(context);
+                        },
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Level ${widget.level}',
+                          style: const TextStyle(
+                            color: Color(0xFF0369A1),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      }),
-                    ),
+                        ),
+                      ),
+                      Text(
+                        'Score: $_score',
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Color(0xFFDC2626), size: 26),
+                          const SizedBox(width: 6),
+                          Text(
+                            '00:${_timeLeft.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              color: Color(0xFFDC2626),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // Area Game & Kartu di-align Center
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Grid Kartu diposisikan persis di tengah secara vertikal & horizontal
+                    Center(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          alignment: Alignment.center,
+                          constraints: BoxConstraints(maxWidth: maxGridWidth),
+                          padding: const EdgeInsets.all(16),
+                          child: GridView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                              childAspectRatio: 0.75, // Proporsi kartu standar
+                            ),
+                            itemCount: _cards.length,
+                            itemBuilder: (context, index) {
+                              return CardWidget(
+                                isFlipped: _isFlipped[index],
+                                imagePath: _cards[index],
+                                onTap: () => _onCardTap(index),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Hitung mundur persiapan (3, 2, 1)
+                    if (_isMemorizing)
+                      Container(
+                        color: Colors.black38,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'HAFALKAN KARTU!',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                  shadows: [
+                                    Shadow(color: Colors.black54, blurRadius: 8),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                '$_prepTime',
+                                style: const TextStyle(
+                                  fontSize: 130,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(color: Colors.black45, blurRadius: 16),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

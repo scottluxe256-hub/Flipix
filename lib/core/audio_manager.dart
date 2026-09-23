@@ -1,73 +1,48 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart'; // Untuk debugPrint
 
 class AudioManager {
   AudioManager._();
   static final AudioManager instance = AudioManager._();
 
   final AudioPlayer _bgmPlayer = AudioPlayer();
-  // Tidak perlu _sfxPlayer global jika setiap SFX membuat instance baru
+  String? _currentBgmTrack;
 
   bool isBgmEnabled = true;
   bool isSfxEnabled = true;
-  String _currentBgm = ''; // Menyimpan nama BGM terakhir yang diputar
 
   Future<void> init() async {
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
-  void playBgm(String filename) async {
-    _currentBgm = filename; // Simpan status BGM saat ini
+  void playBgm(String filename) {
+    _currentBgmTrack = filename;
     if (!isBgmEnabled) return;
-    try {
-      await _bgmPlayer.play(AssetSource('audio/$filename'));
-    } catch (e) {
-      debugPrint('Error playing BGM: $e');
+    _bgmPlayer.play(AssetSource('audio/$filename'));
+  }
+
+  void stopBgm({bool clearTrack = false}) {
+    _bgmPlayer.stop();
+    if (clearTrack) {
+      _currentBgmTrack = null;
     }
   }
 
-  void stopBgm() async {
-    await _bgmPlayer.stop();
-  }
-  
-  void pauseBgm() async {
-      await _bgmPlayer.pause();
-  }
-  
-  void resumeBgm() async {
-       if (isBgmEnabled) {
-          await _bgmPlayer.resume();
-       }
-  }
-
-  void playSfx(String filename) async {
+  void playSfx(String filename) {
     if (!isSfxEnabled) return;
-    try {
-      // Instance baru agar bisa overlap tanpa memotong suara sebelumnya
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/$filename'));
-      player.onPlayerComplete.listen((_) => player.dispose()); // Bersihkan memori setelah selesai
-    } catch (e) {
-      debugPrint('Error playing SFX: $e');
-    }
+    // Menggunakan instance AudioPlayer terpisah agar SFX bisa overlap saat diklik cepat
+    AudioPlayer().play(AssetSource('audio/$filename'));
   }
 
   void toggleBgm(bool value) {
     isBgmEnabled = value;
-    if (isBgmEnabled) {
-      // Jika dihidupkan, putar ulang BGM terakhir dari awal
-      if (_currentBgm.isNotEmpty) {
-        playBgm(_currentBgm);
-      }
-    } else {
-      stopBgm();
+    if (!isBgmEnabled) {
+      _bgmPlayer.stop();
+    } else if (_currentBgmTrack != null) {
+      _bgmPlayer.play(AssetSource('audio/$_currentBgmTrack'));
     }
   }
 
   void toggleSfx(bool value) {
     isSfxEnabled = value;
   }
-  
-  // Getter agar sesuai dengan kode di LobbyScreen
-  bool get isBgmOn => isBgmEnabled;
 }

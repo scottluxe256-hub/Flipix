@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'core/audio_manager.dart';
+import 'core/game_state.dart';
 import 'ui/screens/intro_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AudioManager.instance.init();
+  await GameState.instance.init();
   runApp(const FlipCardApp());
 }
 
@@ -18,9 +20,8 @@ class FlipCardApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        fontFamily: 'Segoe UI', // Font bawaan Windows
+        fontFamily: 'Segoe UI',
       ),
-      // Akan diarahkan ke IntroScreen terlebih dahulu
       home: const IntroScreen(),
     );
   }
