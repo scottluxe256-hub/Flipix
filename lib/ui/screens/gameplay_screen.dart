@@ -7,6 +7,7 @@ import '../../core/game_state.dart';
 import '../components/card_widget.dart';
 import '../components/glass_panel.dart';
 import '../components/result_popup.dart';
+import 'lobby_screen.dart';
 
 class GameplayScreen extends StatefulWidget {
   final int level;
@@ -35,7 +36,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    // Waktu mulai dari 60 detik, sedikit berkurang di level tinggi tapi tetap adil
+    // Waktu mulai dari 60 detik, berkurang sedikit di level tinggi
     _timeLeft = max(30, 60 - (widget.level - 1) * 3);
 
     _setupCards();
@@ -119,13 +120,13 @@ class _GameplayScreenState extends State<GameplayScreen> {
           setState(() {
             _isMatched[first] = true;
             _isMatched[second] = true;
-            _score += 50;
+            _score += 50; // Skor bertambah konsisten (sama persis dengan yang tampil di dialog)
             _isProcessing = false;
           });
           _checkWinCondition();
         });
       } else {
-        // Salah: Balik kembali tanpa mengurangi nyawa (murni fokus waktu)
+        // Salah: Balik kembali tanpa mengurangi nyawa
         Future.delayed(const Duration(milliseconds: 700), () {
           if (!mounted) return;
           AudioManager.instance.playSfx('salah.m4a');
@@ -141,9 +142,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   void _checkWinCondition() {
     // Menang jika SEMUA kartu berhasil dicocokkan sebelum waktu habis
+    // Skor tidak dimodifikasi lagi agar sama persis dengan indikator atas
     if (!_isMatched.contains(false)) {
-      // Bonus waktu: sisa detik x 10 poin
-      _score += _timeLeft * 10;
       _endGame(isWin: true);
     }
   }
@@ -167,7 +167,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
       barrierDismissible: false,
       builder: (context) => ResultPopup(
         isWin: isWin,
-        score: _score,
+        score: _score, // Skor sama persis dengan indikator atas
         onNextOrRetry: () {
           AudioManager.instance.playSfx('click.m4a');
           Navigator.pop(context); // Tutup dialog
@@ -185,8 +185,14 @@ class _GameplayScreenState extends State<GameplayScreen> {
         },
         onExit: () {
           AudioManager.instance.playSfx('click.m4a');
-          Navigator.pop(context); // Tutup dialog
-          Navigator.pop(context); // Kembali ke level screen
+          AudioManager.instance.stopBgm();
+          // Keluar dari ingame langsung mengarah ke Lobby dan memutar output.m4a
+          AudioManager.instance.playBgm('output.m4a');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LobbyScreen()),
+            (route) => false,
+          );
         },
       ),
     );
@@ -200,28 +206,34 @@ class _GameplayScreenState extends State<GameplayScreen> {
   }
 
   int _getCrossAxisCount(int totalCards) {
-    if (totalCards <= 6) return 3;
-    if (totalCards <= 8) return 4;
-    if (totalCards <= 10) return 5;
-    if (totalCards <= 12) return 4;
-    if (totalCards <= 16) return 4;
-    if (totalCards <= 18) return 6;
-    return 6;
+    // Melebar ke samping kiri dan kanan (maksimal 2 baris agar tidak terus ke bawah)
+    return (totalCards / 2).ceil();
+  }
+
+  double _getCardSpacing(int totalCards) {
+    if (totalCards <= 8) return 14.0;
+    if (totalCards <= 12) return 10.0;
+    if (totalCards <= 16) return 8.0;
+    return 6.0;
   }
 
   double _getMaxGridWidth(int totalCards) {
-    if (totalCards <= 6) return 450;
-    if (totalCards <= 8) return 580;
+    // Sesuaikan lebar container agar kartu semakin banyak ukuran mengecil secara proporsional
+    if (totalCards <= 6) return 480;
+    if (totalCards <= 8) return 600;
     if (totalCards <= 10) return 720;
-    if (totalCards <= 12) return 650;
-    if (totalCards <= 16) return 650;
-    return 880;
+    if (totalCards <= 12) return 840;
+    if (totalCards <= 14) return 940;
+    if (totalCards <= 16) return 1040;
+    if (totalCards <= 18) return 1120;
+    return 1200;
   }
 
   @override
   Widget build(BuildContext context) {
     final int crossAxisCount = _getCrossAxisCount(_cards.length);
     final double maxGridWidth = _getMaxGridWidth(_cards.length);
+    final double spacing = _getCardSpacing(_cards.length);
 
     return Scaffold(
       body: Container(
@@ -253,6 +265,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         onPressed: () {
                           AudioManager.instance.playSfx('click.m4a');
                           AudioManager.instance.stopBgm();
+                          AudioManager.instance.playBgm('output.m4a');
                           Navigator.pop(context);
                         },
                       ),
@@ -305,31 +318,34 @@ class _GameplayScreenState extends State<GameplayScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Grid Kartu diposisikan persis di tengah secara vertikal & horizontal
+                    // Grid Kartu diposisikan di tengah, melebar ke samping kiri-kanan & mengecil proporsional
                     Center(
-                      child: SingleChildScrollView(
-                        child: Container(
-                          alignment: Alignment.center,
-                          constraints: BoxConstraints(maxWidth: maxGridWidth),
-                          padding: const EdgeInsets.all(16),
-                          child: GridView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.75, // Proporsi kartu standar
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Container(
+                            alignment: Alignment.center,
+                            constraints: BoxConstraints(maxWidth: maxGridWidth),
+                            child: GridView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: spacing,
+                                mainAxisSpacing: spacing,
+                                childAspectRatio: 0.72,
+                              ),
+                              itemCount: _cards.length,
+                              itemBuilder: (context, index) {
+                                return CardWidget(
+                                  isFlipped: _isFlipped[index],
+                                  imagePath: _cards[index],
+                                  onTap: () => _onCardTap(index),
+                                );
+                              },
                             ),
-                            itemCount: _cards.length,
-                            itemBuilder: (context, index) {
-                              return CardWidget(
-                                isFlipped: _isFlipped[index],
-                                imagePath: _cards[index],
-                                onTap: () => _onCardTap(index),
-                              );
-                            },
                           ),
                         ),
                       ),

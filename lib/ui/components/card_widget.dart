@@ -65,7 +65,7 @@ class CardWidget extends StatelessWidget {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(6.0),
           child: Image.asset(path, fit: BoxFit.contain),
         ),
       ),
