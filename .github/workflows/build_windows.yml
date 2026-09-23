@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
-    # Variabel CL ini otomatis dibaca oleh MSVC compiler untuk melewati error coroutine deprecation
     env:
       CL: "/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
 
@@ -23,20 +21,32 @@ jobs:
           channel: 'stable'
           architecture: x64
 
-      - name: Generate Windows Platform Files
-        run: flutter create . --platforms=windows
-
       - name: Get Dependencies
         run: flutter pub get
-
-      - name: Generate App Icon
-        run: dart run flutter_launcher_icons
 
       - name: Build Windows Executable
         run: flutter build windows --release
 
-      - name: Upload Artifact
+      - name: Create Single EXE Installer
+        run: |
+          echo "[Setup]" > setup.iss
+          echo "AppName=Flip Card Game" >> setup.iss
+          echo "AppVersion=1.0" >> setup.iss
+          echo "DefaultDirName={autopf}\FlipCardGame" >> setup.iss
+          echo "OutputDir=Output" >> setup.iss
+          echo "OutputBaseFilename=Setup_FlipCardGame" >> setup.iss
+          echo "Compression=lzma2" >> setup.iss
+          echo "SolidCompression=yes" >> setup.iss
+          echo "PrivilegesRequired=lowest" >> setup.iss
+          echo "SetupIconFile=windows\runner\resources\app_icon.ico" >> setup.iss
+          echo "[Files]" >> setup.iss
+          echo "Source: ""build\windows\x64\runner\Release\*""; DestDir: ""{app}""; Flags: ignoreversion recursesubdirs createallsubdirs" >> setup.iss
+          echo "[Icons]" >> setup.iss
+          echo "Name: ""{autodesktop}\Flip Card Game""; Filename: ""{app}\flip_card_game.exe""" >> setup.iss
+          iscc setup.iss
+
+      - name: Upload Single EXE Installer
         uses: actions/upload-artifact@v4
         with:
-          name: FlipCardGame-Windows
-          path: build/windows/x64/runner/Release/
+          name: FlipCardGame-Installer
+          path: Output/Setup_FlipCardGame.exe

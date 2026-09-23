@@ -11,34 +11,31 @@ class IntroScreen extends StatefulWidget {
 
 class _IntroScreenState extends State<IntroScreen> {
   late VideoPlayerController _controller;
-  bool _isFadingOut = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.asset('assets/video/x64.mp4')
       ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-      });
-
-    // Pindah ke lobby setelah 7 detik (atau saat video selesai) dengan fade out
-    Future.delayed(const Duration(seconds: 7), () {
-      if (mounted) {
-        setState(() => _isFadingOut = true);
-        Future.delayed(const Duration(milliseconds: 800), () {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 800),
-              pageBuilder: (_, __, ___) => const LobbyScreen(),
-              transitionsBuilder: (_, animation, __, child) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-            ),
-          );
+        setState(() {
+          _isInitialized = true;
         });
-      }
-    });
+        _controller.play();
+        _controller.setLooping(false);
+        _controller.addListener(() {
+          if (_controller.value.position >= _controller.value.duration) {
+            _navigateToLobby();
+          }
+        });
+      });
+  }
+
+  void _navigateToLobby() {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LobbyScreen()),
+    );
   }
 
   @override
@@ -51,17 +48,29 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: AnimatedOpacity(
-        opacity: _isFadingOut ? 0.0 : 1.0,
-        duration: const Duration(milliseconds: 800),
-        child: Center(
-          child: _controller.value.isInitialized
-              ? AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: VideoPlayer(_controller),
-                )
-              : const CircularProgressIndicator(color: Colors.blue),
-        ),
+      body: Stack(
+        children: [
+          Center(
+            child: _isInitialized
+                ? AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  )
+                : const CircularProgressIndicator(color: Colors.white),
+          ),
+          Positioned(
+            bottom: 30,
+            right: 30,
+            child: TextButton(
+              onPressed: _navigateToLobby,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.black54,
+              ),
+              child: const Text('SKIP'),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/audio_manager.dart';
+import '../../core/game_state.dart';
 import '../components/card_widget.dart';
 import '../components/glass_panel.dart';
-import '../components/result_popup.dart';
-import 'level_screen.dart';
 
 class GameplayScreen extends StatefulWidget {
   final int level;
@@ -15,172 +13,168 @@ class GameplayScreen extends StatefulWidget {
   State<GameplayScreen> createState() => _GameplayScreenState();
 }
 
-class _GameplayScreenState extends State<GameplayScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _auroraController;
-  late Animation<Color?> _colorAnim1;
-  late Animation<Color?> _colorAnim2;
+class _GameplayScreenState extends State<GameplayScreen> {
+  late List<String> _cards;
+  late List<bool> _flipped;
+  late List<bool> _matched;
 
-  List<String> _cards = [];
-  List<bool> _isFlipped = [];
-  List<bool> _isMatched = [];
-  
+  int? _previousIndex;
+  bool _isBusy = false;
+  int _pairsFound = 0;
+  int _maxPairs = 6;
   int _score = 0;
-  late int _targetScore;
-  late int _timeLeft;
-  
-  int _prepTime = 3;
-  bool _isMemorizing = true;
+  int _timeLeft = 60;
   Timer? _timer;
-
-  int? _firstSelectedIndex;
-  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _targetScore = widget.level * 100;
-    _timeLeft = 60 - (widget.level * 2); // Waktu makin sempit di level tinggi
-
-    // Animasi Aurora Biru Soft
-    _auroraController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
-    _colorAnim1 = ColorTween(begin: const Color(0xFF0F2027), end: const Color(0xFF203A43)).animate(_auroraController);
-    _colorAnim2 = ColorTween(begin: const Color(0xFF2C5364), end: const Color(0xFF0F2027)).animate(_auroraController);
-
-    _setupCards();
-    _startPrepTimer();
+    _setupLevel();
+    _startTimer();
+    AudioManager.instance.playBgm('bgm_ingame.m4a');
   }
 
-  void _setupCards() {
-    int pairsCount = min(widget.level + 2, 11); // Maksimal 11 pasang (sesuai jumlah assets card_1 sd card_11)
-    List<String> selectedImages = [];
-    for (int i = 1; i <= pairsCount; i++) {
-      selectedImages.add('assets/images/card_$i.webp');
-    }
-    
-    _cards = [...selectedImages, ...selectedImages];
-    _cards.shuffle(Random());
-    
-    // Saat memorizing, semua kartu TERBUKA (isFlipped = true)
-    _isFlipped = List.generate(_cards.length, (index) => true);
-    _isMatched = List.generate(_cards.length, (index) => false);
+  void _setupLevel() {
+    _maxPairs = (widget.level + 2).clamp(3, 11);
+    _timeLeft = 45 + (widget.level * 5);
+
+    List<String> availableAssets = List.generate(
+      11,
+      (index) => 'assets/images/card_${index + 1}.webp',
+    );
+    availableAssets.shuffle();
+
+    List<String> selectedAssets = availableAssets.take(_maxPairs).toList();
+    _cards = [...selectedAssets, ...selectedAssets]..shuffle();
+
+    _flipped = List.filled(_cards.length, false);
+    _matched = List.filled(_cards.length, false);
   }
 
-  void _startPrepTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_prepTime > 1) {
-        setState(() => _prepTime--);
-      } else {
-        timer.cancel();
-        _startGame();
-      }
-    });
-  }
-
-  void _startGame() {
-    AudioManager.instance.playSfx('game-start.opus');
-    setState(() {
-      _isMemorizing = false;
-      // Tutup semua kartu
-      _isFlipped = List.generate(_cards.length, (index) => false);
-    });
-    
-    // Mulai BGM ingame
-    Future.delayed(const Duration(milliseconds: 500), () {
-      AudioManager.instance.playBgm('ingame.m4a');
-    });
-
+  void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeLeft > 0) {
-        setState(() => _timeLeft--);
+        setState(() {
+          _timeLeft--;
+        });
       } else {
-        _endGame(isWin: false);
+        _timer?.cancel();
+        _showGameOverDialog();
       }
     });
   }
 
-  void _onCardTap(int index) {
-    if (_isMemorizing || _isProcessing || _isMatched[index] || _isFlipped[index]) return;
+  void _onCardTap(int index) async {
+    if (_isBusy || _flipped[index] || _matched[index]) return;
 
-    AudioManager.instance.playSfx('flip.opus');
-    setState(() => _isFlipped[index] = true);
+    AudioManager.instance.playSfx('flip.m4a');
 
-    if (_firstSelectedIndex == null) {
-      _firstSelectedIndex = index;
+    setState(() {
+      _flipped[index] = true;
+    });
+
+    if (_previousIndex == null) {
+      _previousIndex = index;
     } else {
-      _isProcessing = true;
-      int first = _firstSelectedIndex!;
-      int second = index;
-      _firstSelectedIndex = null;
+      _isBusy = true;
+      int prev = _previousIndex!;
 
-      if (_cards[first] == _cards[second]) {
-        // Cocok (Benar)
-        Future.delayed(const Duration(milliseconds: 300), () {
-          AudioManager.instance.playSfx('benar.opus');
-          setState(() {
-            _isMatched[first] = true;
-            _isMatched[second] = true;
-            _score += 50;
-            _isProcessing = false;
-          });
-          _checkWinCondition();
+      if (_cards[prev] == _cards[index]) {
+        AudioManager.instance.playSfx('match.m4a');
+        setState(() {
+          _matched[prev] = true;
+          _matched[index] = true;
+          _pairsFound++;
+          _score += 50;
+          _previousIndex = null;
+          _isBusy = false;
         });
+
+        if (_pairsFound == _maxPairs) {
+          _timer?.cancel();
+          GameState.instance.unlockNextLevel();
+          _showWinDialog();
+        }
       } else {
-        // Salah
-        Future.delayed(const Duration(milliseconds: 800), () {
-          AudioManager.instance.playSfx('salah.opus');
-          setState(() {
-            _isFlipped[first] = false;
-            _isFlipped[second] = false;
-            _isProcessing = false;
-          });
+        await Future.delayed(const Duration(milliseconds: 700));
+        setState(() {
+          _flipped[prev] = false;
+          _flipped[index] = false;
+          _previousIndex = null;
+          _isBusy = false;
         });
       }
     }
   }
 
-  void _checkWinCondition() {
-    if (!_isMatched.contains(false)) { // Semua cocok
-      if (_score >= _targetScore) {
-        _endGame(isWin: true);
-      } else {
-        _endGame(isWin: false); // Semua terbuka tapi skor kurang
-      }
-    }
-  }
-
-  void _endGame({required bool isWin}) {
-    _timer?.cancel();
-    AudioManager.instance.stopBgm();
-    
-    if (isWin) {
-      AudioManager.instance.playSfx('level-completed.opus');
-      if (widget.level == highestLevelUnlockedGlobal && widget.level < 10) {
-        highestLevelUnlockedGlobal++; // Buka level selanjutnya
-      }
-    } else {
-      AudioManager.instance.playSfx('game-over.opus');
-    }
-
+  void _showWinDialog() {
+    AudioManager.instance.playSfx('win.m4a');
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => ResultPopup(
-        isWin: isWin,
-        score: _score,
-        onNextOrRetry: () {
-          AudioManager.instance.playSfx('click.opus');
-          Navigator.pop(context); // Tutup popup
-          if (isWin && widget.level < 10) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => GameplayScreen(level: widget.level + 1)));
-          } else {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => GameplayScreen(level: widget.level)));
-          }
-        },
-        onExit: () {
-          AudioManager.instance.playSfx('click.opus');
-          Navigator.pop(context); // Tutup popup
-          Navigator.pop(context); // Kembali ke level screen
-        },
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('Level Completed! 🎉', textAlign: TextAlign.center),
+        content: Text('Score: $_score\nTime Remaining: ${_timeLeft}s'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Menu'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (widget.level < 10) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GameplayScreen(level: widget.level + 1),
+                  ),
+                );
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Next Level'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGameOverDialog() {
+    AudioManager.instance.playSfx('gameover.m4a');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('Game Over 😞', textAlign: TextAlign.center),
+        content: const Text('Time is up! Try again.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Menu'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GameplayScreen(level: widget.level),
+                ),
+              );
+            },
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }
@@ -188,102 +182,62 @@ class _GameplayScreenState extends State<GameplayScreen> with SingleTickerProvid
   @override
   void dispose() {
     _timer?.cancel();
-    _auroraController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Sesuaikan jumlah kolom berdasarkan jumlah kartu agar muat di layar
-    int crossAxisCount = _cards.length > 16 ? 8 : (_cards.length > 8 ? 6 : 4);
-
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: _auroraController,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_colorAnim1.value!, _colorAnim2.value!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: child,
-          );
-        },
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Panel Atas (Glassmorphism)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GlassPanel(
-                  height: 80,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () {
-                          AudioManager.instance.playSfx('click.opus');
-                          AudioManager.instance.stopBgm();
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Text('Target: $_targetScore', style: const TextStyle(color: Colors.white, fontSize: 20)),
-                      Text('Score: $_score', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                      Text('Time: 00:${_timeLeft.toString().padLeft(2, '0')}', style: const TextStyle(color: Colors.redAccent, fontSize: 24, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Area Game & Hitung Mundur
-              Expanded(
-                child: Stack(
-                  alignment: Alignment.center,
+      backgroundColor: const Color(0xFF87CEFA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: GlassPanel(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          shrinkWrap: true,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: 0.75, // Proporsi kartu standar
-                          ),
-                          itemCount: _cards.length,
-                          itemBuilder: (context, index) {
-                            return CardWidget(
-                              isFlipped: _isFlipped[index],
-                              imagePath: _cards[index],
-                              onTap: () => _onCardTap(index),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    
-                    // Angka besar hitung mundur 3, 2, 1
-                    if (_isMemorizing)
-                      Container(
-                        color: Colors.black45, // Gelapkan sedikit agar angka menonjol
-                        child: Center(
-                          child: Text(
-                            '$_prepTime',
-                            style: const TextStyle(fontSize: 150, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                      ),
+                    Text('Level ${widget.level}',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Time: ${_timeLeft}s',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Score: $_score',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  padding: const EdgeInsets.all(16),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _maxPairs > 8 ? 6 : 4,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.8,
+                    ),
+                    itemCount: _cards.length,
+                    itemBuilder: (context, index) {
+                      return CardWidget(
+                        imageAsset: _cards[index],
+                        isFlipped: _flipped[index],
+                        isMatched: _matched[index],
+                        onTap: () => _onCardTap(index),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

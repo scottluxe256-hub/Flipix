@@ -1,41 +1,45 @@
 import 'package:audioplayers/audioplayers.dart';
 
 class AudioManager {
-  AudioManager._();
-  static final AudioManager instance = AudioManager._();
+  static final AudioManager instance = AudioManager._internal();
+  AudioManager._internal();
 
   final AudioPlayer _bgmPlayer = AudioPlayer();
   final AudioPlayer _sfxPlayer = AudioPlayer();
 
-  bool isBgmEnabled = true;
-  bool isSfxEnabled = true;
+  bool isBgmOn = true;
+  bool isSfxOn = true;
 
   Future<void> init() async {
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
-  void playBgm(String filename) {
-    if (!isBgmEnabled) return;
-    _bgmPlayer.play(AssetSource('audio/$filename'));
+  Future<void> playBgm(String fileName) async {
+    if (!isBgmOn) return;
+    try {
+      await _bgmPlayer.stop();
+      await _bgmPlayer.play(AssetSource('audio/$fileName'));
+    } catch (_) {}
   }
 
-  void stopBgm() {
-    _bgmPlayer.stop();
+  void toggleBgm() {
+    isBgmOn = !isBgmOn;
+    if (isBgmOn) {
+      _bgmPlayer.resume();
+    } else {
+      _bgmPlayer.pause();
+    }
   }
 
-  void playSfx(String filename) {
-    if (!isSfxEnabled) return;
-    // Menggunakan source terpisah agar SFX bisa overlap jika diklik cepat
-    AudioPlayer().play(AssetSource('audio/$filename'));
+  Future<void> playSfx(String fileName) async {
+    if (!isSfxOn) return;
+    try {
+      await _sfxPlayer.stop();
+      await _sfxPlayer.play(AssetSource('audio/$fileName'));
+    } catch (_) {}
   }
 
-  void toggleBgm(bool value) {
-    isBgmEnabled = value;
-    if (!isBgmEnabled) stopBgm();
-    // Logic untuk resume BGM bisa ditambahkan sesuai state aktif
-  }
-
-  void toggleSfx(bool value) {
-    isSfxEnabled = value;
+  void toggleSfx() {
+    isSfxOn = !isSfxOn;
   }
 }

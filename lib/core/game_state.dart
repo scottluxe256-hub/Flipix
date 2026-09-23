@@ -1,37 +1,21 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class GameState extends ChangeNotifier {
+  static final GameState instance = GameState._internal();
+  GameState._internal();
+
+  int highestUnlockedLevel = 1;
   int currentLevel = 1;
-  int highestLevelUnlocked = 1;
-  
-  int score = 0;
-  int targetScore = 100;
-  int timeLeft = 60;
-  bool isPlaying = false;
 
   void unlockNextLevel() {
-    if (currentLevel == highestLevelUnlocked && currentLevel < 10) {
-      highestLevelUnlocked++;
+    if (currentLevel >= highestUnlockedLevel && highestUnlockedLevel < 10) {
+      highestUnlockedLevel = currentLevel + 1;
       notifyListeners();
     }
   }
 
-  void startLevel(int level) {
+  void setLevel(int level) {
     currentLevel = level;
-    score = 0;
-    targetScore = level * 100; // Contoh kalkulasi target
-    timeLeft = 60 - (level * 2); // Semakin tinggi level, waktu makin sedikit
-    isPlaying = true;
-    notifyListeners();
-  }
-
-  void addScore(int points) {
-    score += points;
-    notifyListeners();
-  }
-
-  void setGameOver() {
-    isPlaying = false;
     notifyListeners();
   }
 }

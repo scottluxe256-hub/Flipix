@@ -1,64 +1,88 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:flutter/material.dart';
 
 class CardWidget extends StatelessWidget {
+  final String imageAsset;
   final bool isFlipped;
-  final String imagePath;
+  final bool isMatched;
   final VoidCallback onTap;
 
   const CardWidget({
     super.key,
+    required this.imageAsset,
     required this.isFlipped,
-    required this.imagePath,
+    required this.isMatched,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: TweenAnimationBuilder(
-        tween: Tween<double>(begin: 0, end: isFlipped ? 180 : 0),
-        duration: const Duration(milliseconds: 300),
-        builder: (context, double value, child) {
-          bool isBackVisible = value < 90;
-          return Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001) // Efek perspektif 3D
-              ..rotateY(value * pi / 180),
-            child: isBackVisible
-                ? _buildCardSide('assets/images/card_back.webp')
-                : Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.identity()..rotateY(pi), // Balik gambar depan agar tidak terbalik (mirror)
-                    child: _buildCardSide(imagePath, isFront: true),
-                  ),
+      onTap: (isFlipped || isMatched) ? null : onTap,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final rotate = Tween(begin: pi, end: 0.0).animate(animation);
+          return AnimatedBuilder(
+            animation: rotate,
+            child: child,
+            builder: (context, child) {
+              final isUnder = ValueKey(isFlipped || isMatched) != child?.key;
+              var value = isUnder ? min(rotate.value, pi / 2) : rotate.value;
+              return Transform(
+                transform: Matrix4.rotationY(value),
+                alignment: Alignment.center,
+                child: child,
+              );
+            },
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildCardSide(String path, {bool isFront = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white, // Kartu warna putih solid murni
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          // Gambar transparan ditumpuk di atas kartu putih
-          child: Image.asset(path, fit: BoxFit.contain),
-        ),
+        child: (isFlipped || isMatched)
+            ? Container(
+                key: const ValueKey(true),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Center(
+                  child: Image.asset(
+                    imageAsset,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              )
+            : Container(
+                key: const ValueKey(false),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blueAccent, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.style,
+                    size: 40,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ),
       ),
     );
   }

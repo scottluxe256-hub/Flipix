@@ -1,5 +1,5 @@
 name: flip_card_game
-description: A simple flip card game for Windows.
+description: "A simple 2D flip card game for Windows"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,23 +9,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  audioplayers: ^6.0.0  # Diperbarui ke versi terbaru untuk mengatasi error C++ MSVC
-  video_player: ^2.8.2
+  audioplayers: ^6.0.0
+  video_player: ^2.8.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/audio/
     - assets/images/
+    - assets/audio/
     - assets/video/
-
-flutter_launcher_icons:
-  windows:
-    generate: true
-    image_path: "assets/images/logo.png"
-    icon_size: 256
