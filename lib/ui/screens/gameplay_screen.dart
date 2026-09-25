@@ -36,7 +36,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    final initialTime = max(30, 60 - (widget.level - 1) * 3);
+    final initialTime = max(30, 50 - (widget.level - 1) * 1);
     // ValueNotifier mengisolasi rebuild teks timer tanpa memicu rebuild seluruh grid kartu tiap detik (hemat CPU)
     _timeLeftNotifier = ValueNotifier<int>(initialTime);
 
