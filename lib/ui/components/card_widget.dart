@@ -20,7 +20,7 @@ class CardWidget extends StatelessWidget {
         onTap: onTap,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0, end: isFlipped ? 180 : 0),
-          duration: const Duration(milliseconds: 320),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOutCubic,
           builder: (context, double value, _) {
             final bool isBackVisible = value < 90;
